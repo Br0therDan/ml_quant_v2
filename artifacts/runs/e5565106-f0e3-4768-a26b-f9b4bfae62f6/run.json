@@ -1,0 +1,128 @@
+{
+  "run_id": "e5565106-f0e3-4768-a26b-f9b4bfae62f6",
+  "run_slug": "demo_momentum_v1__2025-12-17_2026-01-16__ingest-feat-lbl-rec-bt__aapl-msft",
+  "display_name": "demo_momentum_v1 | 2025-12-17..2026-01-16 | ingest-feat-lbl-rec-bt | AAPL-MSFT",
+  "kind": "pipeline",
+  "invoked_command": "/Users/donghakim/ml_quant_v2/.venv/bin/quant pipeline run --strategy strategies/example.yaml --from 2025-12-17 --to 2026-01-16 --run-id e5565106-f0e3-4768-a26b-f9b4bfae62f6",
+  "artifacts_dir": "artifacts/runs/e5565106-f0e3-4768-a26b-f9b4bfae62f6/",
+  "plan_run_id": "plan_20260116_134058_ui_74de80",
+  "plan_artifacts_dir": "artifacts/runs/plan_20260116_134058_ui_74de80/",
+  "status": "success",
+  "started_at": "2026-01-16T13:42:55.971784",
+  "ended_at": "2026-01-16T13:42:58.285212",
+  "exit_code": 0,
+  "strategy_id": "demo_momentum_v1",
+  "strategy_version": "1.0.0",
+  "strategy_path": "strategies/example.yaml",
+  "date_from": "2025-12-17",
+  "date_to": "2026-01-16",
+  "symbols_resolved": [
+    "AAPL",
+    "MSFT"
+  ],
+  "stages_resolved": [
+    "ingest",
+    "features",
+    "labels",
+    "recommend",
+    "backtest"
+  ],
+  "fail_fast": true,
+  "dry_run": false,
+  "stage_results": [
+    {
+      "stage_name": "ingest",
+      "status": "success",
+      "duration_sec": 0.893109,
+      "stage_exec_id": "b7f4dd74-7130-414b-82bf-3845c462842b",
+      "error_text": null,
+      "result_path": "stages/ingest/result.json",
+      "meta": {
+        "n_symbols": 2,
+        "symbols": [
+          "AAPL",
+          "MSFT"
+        ]
+      }
+    },
+    {
+      "stage_name": "features",
+      "status": "success",
+      "duration_sec": 0.890775,
+      "stage_exec_id": "4b7207e0-fd5d-48ef-acc8-653d34f12764",
+      "error_text": null,
+      "result_path": "stages/features/result.json",
+      "meta": {
+        "n_symbols": 2,
+        "symbols": [
+          "AAPL",
+          "MSFT"
+        ],
+        "feature_version": "v1"
+      }
+    },
+    {
+      "stage_name": "labels",
+      "status": "success",
+      "duration_sec": 0.331134,
+      "stage_exec_id": "1831dd74-07b6-43e1-bc91-d538dcdd0b9a",
+      "error_text": null,
+      "result_path": "stages/labels/result.json",
+      "meta": {
+        "n_symbols": 2,
+        "symbols": [
+          "AAPL",
+          "MSFT"
+        ],
+        "label_version": "v1",
+        "horizon": 60
+      }
+    },
+    {
+      "stage_name": "recommend",
+      "status": "success",
+      "duration_sec": 0.020752,
+      "stage_exec_id": "b30c7b19-ca7e-4d9b-8635-c1013d74170c",
+      "error_text": null,
+      "result_path": "stages/recommend/result.json",
+      "meta": {
+        "n_dates": 0,
+        "n_rows": 0,
+        "date_min": null,
+        "date_max": null,
+        "top_k": null,
+        "recommender": {
+          "type": "factor_rank",
+          "algo": null,
+          "target": null,
+          "featureset": null,
+          "feature_version": "v1"
+        },
+        "artifacts": {}
+      }
+    },
+    {
+      "stage_name": "backtest",
+      "status": "success",
+      "duration_sec": 0.154841,
+      "stage_exec_id": "c3f2f002-087f-4a8e-9464-2d92dde48b3a",
+      "error_text": null,
+      "result_path": "stages/backtest/result.json",
+      "meta": {
+        "date_from": "2025-12-17",
+        "date_to": "2026-01-16",
+        "has_metrics": true,
+        "metrics_keys": [
+          "cagr",
+          "max_dd",
+          "mean",
+          "n_days",
+          "run_id",
+          "sharpe",
+          "std"
+        ]
+      }
+    }
+  ],
+  "generated_at": "2026-01-16T13:42:58.286039"
+}

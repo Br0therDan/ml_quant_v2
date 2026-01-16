@@ -1,0 +1,16 @@
+{
+  "strategy": "strategies/ml_gbdt_example.yaml",
+  "from": "2025-12-17",
+  "to": "2026-01-16",
+  "symbols": [
+    "PLTR"
+  ],
+  "stages": [
+    "features",
+    "labels",
+    "recommend",
+    "backtest"
+  ],
+  "fail_fast": true,
+  "invoked_command": "/Users/donghakim/ml_quant_v2/.venv/bin/quant pipeline run --strategy strategies/ml_gbdt_example.yaml --from 2025-12-17 --to 2026-01-16 --run-id 41194f04-e60c-45fb-9562-749344f292a3 --symbols PLTR --stages features,labels,recommend,backtest"
+}

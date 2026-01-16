@@ -1,0 +1,13 @@
+{
+  "run_id": "d3488335-f735-4c59-ae77-a5dad3164cc9",
+  "run_slug": "demo_momentum_v1__2025-12-17_2026-01-16__ingest__aapl-ionq-qqqm",
+  "display_name": "demo_momentum_v1 | 2025-12-17..2026-01-16 | ingest | AAPL-IONQ-QQQM",
+  "artifacts_dir": "artifacts/runs/d3488335-f735-4c59-ae77-a5dad3164cc9/",
+  "created_at": "2026-01-16T11:01:24.565715",
+  "strategy_id": "demo_momentum_v1",
+  "date_from": "2025-12-17",
+  "date_to": "2026-01-16",
+  "stages_resolved": [
+    "ingest"
+  ]
+}

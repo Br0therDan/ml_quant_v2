@@ -1,0 +1,62 @@
+{
+  "algo": "lightgbm",
+  "target": "forward_ret_5d",
+  "feature_version": "v1",
+  "features": [
+    "gap_open",
+    "hl_range",
+    "ret_1d",
+    "ret_20d",
+    "ret_5d",
+    "ret_60d",
+    "vol_20d",
+    "volume_ratio_20d"
+  ],
+  "train_window": {
+    "train_from": "2020-01-01",
+    "train_to": "2024-12-31",
+    "valid_from": "2025-01-01",
+    "valid_to": "2025-12-31"
+  },
+  "valid_metrics": {
+    "rmse": 0.17671470630718977,
+    "mae": 0.13898270106091098,
+    "rank_ic_spearman": -0.005467863485815773,
+    "n_valid": 250
+  },
+  "feature_importance_top10": [
+    {
+      "feature": "ret_60d",
+      "importance": 1401.0
+    },
+    {
+      "feature": "vol_20d",
+      "importance": 1294.0
+    },
+    {
+      "feature": "hl_range",
+      "importance": 1250.0
+    },
+    {
+      "feature": "ret_20d",
+      "importance": 1214.0
+    },
+    {
+      "feature": "gap_open",
+      "importance": 1038.0
+    },
+    {
+      "feature": "ret_1d",
+      "importance": 991.0
+    },
+    {
+      "feature": "ret_5d",
+      "importance": 947.0
+    },
+    {
+      "feature": "volume_ratio_20d",
+      "importance": 865.0
+    }
+  ],
+  "generated_at": "2026-01-16T10:49:56.046547"
+}

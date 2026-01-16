@@ -1,0 +1,48 @@
+strategy_id: "demo_ml_gbdt_v1"
+version: "0.1.0"
+
+universe:
+  type: "symbols"
+  symbols: ["AAPL", "PLTR", "QQQM"]
+
+# Baseline signal is kept for backward compatibility (feature_version reference).
+# The actual engine is selected via `recommender.type`.
+signal:
+  type: "factor_rank"
+  inputs:
+    feature_version: "v1"
+    feature_name: "ret_20d"
+
+rebalance:
+  frequency: "daily"
+  asof_policy: "close"
+
+portfolio:
+  top_k: 10
+  weighting: "equal"
+
+# Recommender plugin (V2 POC)
+recommender:
+  type: "ml_gbdt"
+  top_k: 10
+  weighting: "equal"
+  model:
+    algo: "lightgbm"          # lightgbm | xgboost | catboost
+    target: "forward_ret_5d"  # forward_ret_5d | forward_ret_20d
+    featureset: "default"
+    train_window:
+      train_from: "2020-01-01"
+      train_to:   "2024-12-31"
+      valid_from: "2025-01-01"
+      valid_to:   "2025-12-31"
+    params:
+      n_estimators: 300
+      learning_rate: 0.05
+      num_leaves: 31
+
+supervisor:
+  gross_exposure_cap: 1.0
+  max_weight_per_symbol: 0.7
+  max_positions: 20
+  score_floor: -0.5
+  turnover_cap: 1.0

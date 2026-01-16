@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "stage_name": "features",
+  "status": "success",
+  "started_at": "2026-01-16T13:42:56.883192",
+  "ended_at": "2026-01-16T13:42:57.773967",
+  "elapsed_sec": 0.890775,
+  "stage_exec_id": "4b7207e0-fd5d-48ef-acc8-653d34f12764",
+  "meta": {
+    "n_symbols": 2,
+    "symbols": [
+      "AAPL",
+      "MSFT"
+    ],
+    "feature_version": "v1"
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-16T13:42:57.773986"
+}

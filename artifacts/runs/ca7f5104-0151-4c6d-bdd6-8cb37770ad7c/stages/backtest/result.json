@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "stage_name": "backtest",
+  "status": "success",
+  "started_at": "2026-01-16T15:12:22.111439",
+  "ended_at": "2026-01-16T15:12:22.269843",
+  "elapsed_sec": 0.158404,
+  "stage_exec_id": "f7640259-5720-4f91-87a4-ad41b272856f",
+  "meta": {
+    "date_from": "2025-12-18",
+    "date_to": "2026-01-17",
+    "has_metrics": true,
+    "metrics_keys": [
+      "cagr",
+      "max_dd",
+      "mean",
+      "n_days",
+      "run_id",
+      "sharpe",
+      "std"
+    ]
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-16T15:12:22.269861"
+}

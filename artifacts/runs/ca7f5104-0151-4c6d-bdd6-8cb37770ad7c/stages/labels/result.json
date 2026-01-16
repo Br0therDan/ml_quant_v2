@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "stage_name": "labels",
+  "status": "success",
+  "started_at": "2026-01-16T15:12:18.213675",
+  "ended_at": "2026-01-16T15:12:18.342534",
+  "elapsed_sec": 0.128859,
+  "stage_exec_id": "e5a007ea-2549-4b8e-a063-08ca5214b5ca",
+  "meta": {
+    "n_symbols": 1,
+    "symbols": [
+      "IONQ"
+    ],
+    "label_version": "v1",
+    "horizon": 60
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-16T15:12:18.342550"
+}

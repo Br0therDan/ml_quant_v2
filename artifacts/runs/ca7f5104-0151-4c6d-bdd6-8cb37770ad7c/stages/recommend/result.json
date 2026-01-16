@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "stage_name": "recommend",
+  "status": "success",
+  "started_at": "2026-01-16T15:12:18.343683",
+  "ended_at": "2026-01-16T15:12:22.109942",
+  "elapsed_sec": 3.766259,
+  "stage_exec_id": "3280d3fe-691a-46b0-addd-d26ef778a8b6",
+  "meta": {
+    "n_dates": 19,
+    "n_rows": 19,
+    "date_min": "2025-12-18",
+    "date_max": "2026-01-15",
+    "top_k": 10,
+    "recommender": {
+      "type": "ml_gbdt",
+      "algo": "lightgbm",
+      "target": "forward_ret_5d",
+      "featureset": "default",
+      "feature_version": "v1"
+    },
+    "artifacts": {
+      "model_path": "models/model.lightgbm.joblib",
+      "metrics_path": "reports/ml_metrics.json",
+      "summary_path": "reports/ml_summary.md",
+      "predictions_path": "outputs/predictions.csv"
+    }
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-16T15:12:22.109960"
+}

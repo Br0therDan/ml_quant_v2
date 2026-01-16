@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "stage_name": "features",
+  "status": "success",
+  "started_at": "2026-01-16T10:59:31.296960",
+  "ended_at": "2026-01-16T10:59:31.484620",
+  "elapsed_sec": 0.18766,
+  "stage_exec_id": "3d30c5af-55e8-4914-a33d-ffe7e1cb2e03",
+  "meta": {
+    "n_symbols": 1,
+    "symbols": [
+      "IONQ"
+    ],
+    "feature_version": "v1"
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-16T10:59:31.484638"
+}

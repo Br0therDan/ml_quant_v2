@@ -1,0 +1,48 @@
+{
+  "run_id": "d3488335-f735-4c59-ae77-a5dad3164cc9",
+  "run_slug": "demo_momentum_v1__2025-12-17_2026-01-16__ingest__aapl-ionq-qqqm",
+  "display_name": "demo_momentum_v1 | 2025-12-17..2026-01-16 | ingest | AAPL-IONQ-QQQM",
+  "kind": "pipeline",
+  "invoked_command": "/Users/donghakim/ml_quant_v2/.venv/bin/quant pipeline run --strategy strategies/example.yaml --from 2025-12-17 --to 2026-01-16 --run-id d3488335-f735-4c59-ae77-a5dad3164cc9 --symbols IONQ,AAPL,QQQM, --stages ingest",
+  "artifacts_dir": "artifacts/runs/d3488335-f735-4c59-ae77-a5dad3164cc9/",
+  "plan_run_id": "plan_20260116_105904_ui_024bfa",
+  "plan_artifacts_dir": "artifacts/runs/plan_20260116_105904_ui_024bfa/",
+  "status": "success",
+  "started_at": "2026-01-16T11:01:24.540259",
+  "ended_at": "2026-01-16T11:01:25.963481",
+  "exit_code": 0,
+  "strategy_id": "demo_momentum_v1",
+  "strategy_version": "1.0.0",
+  "strategy_path": "strategies/example.yaml",
+  "date_from": "2025-12-17",
+  "date_to": "2026-01-16",
+  "symbols_resolved": [
+    "IONQ",
+    "AAPL",
+    "QQQM"
+  ],
+  "stages_resolved": [
+    "ingest"
+  ],
+  "fail_fast": true,
+  "dry_run": false,
+  "stage_results": [
+    {
+      "stage_name": "ingest",
+      "status": "success",
+      "duration_sec": 1.39541,
+      "stage_exec_id": "2a104c99-bc57-463d-9347-2b5a0f278aec",
+      "error_text": null,
+      "result_path": "stages/ingest/result.json",
+      "meta": {
+        "n_symbols": 3,
+        "symbols": [
+          "IONQ",
+          "AAPL",
+          "QQQM"
+        ]
+      }
+    }
+  ],
+  "generated_at": "2026-01-16T11:01:25.964835"
+}

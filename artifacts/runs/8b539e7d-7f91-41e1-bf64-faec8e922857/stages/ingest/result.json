@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "stage_name": "ingest",
+  "status": "success",
+  "started_at": "2026-01-16T10:49:52.696088",
+  "ended_at": "2026-01-16T10:49:53.826429",
+  "elapsed_sec": 1.130341,
+  "stage_exec_id": "86340cf8-299e-4ed5-91f9-04c84e061dcd",
+  "meta": {
+    "n_symbols": 1,
+    "symbols": [
+      "IONQ"
+    ]
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-16T10:49:53.826447"
+}

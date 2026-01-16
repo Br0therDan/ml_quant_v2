@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "stage_name": "labels",
+  "status": "success",
+  "started_at": "2026-01-16T13:41:06.455114",
+  "ended_at": "2026-01-16T13:41:06.597675",
+  "elapsed_sec": 0.142561,
+  "stage_exec_id": "e85618a0-2105-4bce-90f4-ff1a2790bcc0",
+  "meta": {
+    "n_symbols": 1,
+    "symbols": [
+      "PLTR"
+    ],
+    "label_version": "v1",
+    "horizon": 60
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-16T13:41:06.597694"
+}

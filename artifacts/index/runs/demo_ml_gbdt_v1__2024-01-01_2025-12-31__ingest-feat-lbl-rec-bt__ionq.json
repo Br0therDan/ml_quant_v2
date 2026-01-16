@@ -1,0 +1,17 @@
+{
+  "run_id": "8b539e7d-7f91-41e1-bf64-faec8e922857",
+  "run_slug": "demo_ml_gbdt_v1__2024-01-01_2025-12-31__ingest-feat-lbl-rec-bt__ionq",
+  "display_name": "demo_ml_gbdt_v1 | 2024-01-01..2025-12-31 | ingest-feat-lbl-rec-bt | IONQ",
+  "artifacts_dir": "artifacts/runs/8b539e7d-7f91-41e1-bf64-faec8e922857/",
+  "created_at": "2026-01-16T10:49:52.695329",
+  "strategy_id": "demo_ml_gbdt_v1",
+  "date_from": "2024-01-01",
+  "date_to": "2025-12-31",
+  "stages_resolved": [
+    "ingest",
+    "features",
+    "labels",
+    "recommend",
+    "backtest"
+  ]
+}

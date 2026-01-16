@@ -1,0 +1,17 @@
+{
+  "strategy": "strategies/ml_gbdt_example.yaml",
+  "from": "2025-12-18",
+  "to": "2026-01-17",
+  "symbols": [
+    "IONQ"
+  ],
+  "stages": [
+    "ingest",
+    "features",
+    "labels",
+    "recommend",
+    "backtest"
+  ],
+  "fail_fast": true,
+  "invoked_command": "/Users/donghakim/ml_quant_v2/.venv/bin/quant pipeline run --strategy strategies/ml_gbdt_example.yaml --from 2025-12-18 --to 2026-01-17 --run-id ca7f5104-0151-4c6d-bdd6-8cb37770ad7c --symbols IONQ --stages ingest,features,labels,recommend,backtest"
+}

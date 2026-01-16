@@ -1,0 +1,27 @@
+strategy_id: "demo_momentum_v1"
+version: "1.0.0"
+
+universe:
+  type: "symbols"
+  symbols: ["AAPL", "MSFT"]
+
+signal:
+  type: "factor_rank"
+  inputs:
+    feature_version: "v1"
+    feature_name: "ret_20d"
+
+rebalance:
+  frequency: "daily"
+  asof_policy: "close"
+
+portfolio:
+  top_k: 2
+  weighting: "equal"
+
+supervisor:
+  gross_exposure_cap: 1.0
+  max_weight_per_symbol: 0.7
+  max_positions: 5
+  score_floor: -0.5
+  turnover_cap: 1.0 # placeholder
