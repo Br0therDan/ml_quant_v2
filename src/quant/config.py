@@ -9,7 +9,7 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    alpha_vantage_api_key: str | None = None
+    alpha_vantage_api_key: str | None = "M9TJCCBXW5PJZ3HF"
 
     quant_data_dir: Path = Path("./data")
     quant_duckdb_path: Path = Path("./data/quant.duckdb")
