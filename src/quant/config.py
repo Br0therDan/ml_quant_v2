@@ -48,5 +48,10 @@ class Settings(BaseSettings):
         """Determines project root based on data directory."""
         return self.quant_data_dir.parent
 
+    @property
+    def repo_root(self) -> Path:
+        """Alias for project_root."""
+        return self.project_root
+
 
 settings = Settings()

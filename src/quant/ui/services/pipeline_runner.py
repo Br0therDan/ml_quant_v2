@@ -12,9 +12,9 @@ class PipelineRunner:
         strategy_path: str,
         start_date: str,
         end_date: str,
-        symbols: list[str] = None,
+        symbols: list[str] | None = None,
         dry_run: bool = False,
-        stages: list[str] = None,
+        stages: list[str] | None = None,
     ) -> str | None:
         """
         Start pipeline via 'uv run quant pipeline run'.

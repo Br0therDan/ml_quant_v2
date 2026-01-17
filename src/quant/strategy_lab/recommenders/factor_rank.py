@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -108,7 +108,7 @@ class FactorRankRecommender(BaseRecommender):
         df_top["strategy_id"] = cfg["strategy_id"]
         df_top["version"] = cfg["version"]
         df_top["asof"] = ctx.to_date
-        df_top["generated_at"] = datetime.utcnow()
+        df_top["generated_at"] = datetime.now(UTC)
 
         return df_top[
             [

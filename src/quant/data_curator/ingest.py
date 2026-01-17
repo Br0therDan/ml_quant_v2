@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
+from pathlib import Path
 
 import pandas as pd
 
@@ -19,7 +20,7 @@ class DataIngester:
 
     def get_latest_ts(self, symbol: str) -> datetime | None:
         """Get the latest timestamp for a symbol from DuckDB."""
-        conn = duck_connect(self.db_path)
+        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
         try:
             res = conn.execute(
                 "SELECT max(ts) FROM ohlcv WHERE symbol = ?", [symbol]
@@ -70,7 +71,7 @@ class DataIngester:
                 return
 
         # 4. Save to DuckDB
-        conn = duck_connect(self.db_path)
+        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
         try:
             # DEBUG: What is 'ohlcv' REALLY?
             print(
@@ -79,7 +80,7 @@ class DataIngester:
             df = df.reset_index()
             df["symbol"] = symbol
             df["source"] = "alpha_vantage"
-            df["ingested_at"] = datetime.utcnow()
+            df["ingested_at"] = datetime.now(UTC)
 
             cols = [
                 "symbol",

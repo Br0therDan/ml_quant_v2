@@ -97,7 +97,7 @@ class StrategyLoader:
                 try:
                     top_k = int(recommender.get("top_k"))
                 except Exception:
-                    raise ValueError("recommender.top_k must be an int")
+                    raise ValueError("recommender.top_k must be an int") from None
                 if top_k <= 0:
                     raise ValueError("recommender.top_k must be > 0")
 

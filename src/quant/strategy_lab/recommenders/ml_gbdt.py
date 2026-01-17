@@ -4,7 +4,7 @@ import json
 import os
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +37,7 @@ def _safe_mkdir(p: Path) -> None:
 
 
 @contextmanager
+@contextmanager
 def _redirect_fds_to_file(path: Path):
     """Redirect OS-level stdout/stderr to a file (captures native lib output).
 
@@ -49,36 +50,29 @@ def _redirect_fds_to_file(path: Path):
     fd_err = 2
     saved_out = os.dup(fd_out)
     saved_err = os.dup(fd_err)
-    f = None
-    try:
-        f = open(path, "a", encoding="utf-8")
+
+    with open(path, "a", encoding="utf-8") as f:
         f.write(
-            f"\n--- lightgbm redirect start: {datetime.utcnow().isoformat()}Z ---\n"
+            f"\n--- lightgbm redirect start: {datetime.now(UTC).isoformat()}Z ---\n"
         )
         f.flush()
-        os.dup2(f.fileno(), fd_out)
-        os.dup2(f.fileno(), fd_err)
-        yield
-    finally:
         try:
-            os.dup2(saved_out, fd_out)
-            os.dup2(saved_err, fd_err)
+            os.dup2(f.fileno(), fd_out)
+            os.dup2(f.fileno(), fd_err)
+            yield
         finally:
             try:
-                os.close(saved_out)
-                os.close(saved_err)
-            except Exception:
-                pass
-            if f is not None:
-                try:
+                os.dup2(saved_out, fd_out)
+                os.dup2(saved_err, fd_err)
+            finally:
+                with suppress(Exception):
+                    os.close(saved_out)
+                    os.close(saved_err)
+                with suppress(Exception):
                     f.write(
-                        f"--- lightgbm redirect end: {datetime.utcnow().isoformat()}Z ---\n"
+                        f"--- lightgbm redirect end: {datetime.now(UTC).isoformat()}Z ---\n"
                     )
                     f.flush()
-                except Exception:
-                    pass
-                with suppress(Exception):
-                    f.close()
 
 
 @contextmanager
@@ -89,25 +83,19 @@ def _redirect_fds_to_devnull():
     fd_err = 2
     saved_out = os.dup(fd_out)
     saved_err = os.dup(fd_err)
-    f = None
-    try:
-        f = open(os.devnull, "w")
-        os.dup2(f.fileno(), fd_out)
-        os.dup2(f.fileno(), fd_err)
-        yield
-    finally:
+    with open(os.devnull, "w") as f:
         try:
-            os.dup2(saved_out, fd_out)
-            os.dup2(saved_err, fd_err)
+            os.dup2(f.fileno(), fd_out)
+            os.dup2(f.fileno(), fd_err)
+            yield
         finally:
             try:
-                os.close(saved_out)
-                os.close(saved_err)
-            except Exception:
-                pass
-            if f is not None:
+                os.dup2(saved_out, fd_out)
+                os.dup2(saved_err, fd_err)
+            finally:
                 with suppress(Exception):
-                    f.close()
+                    os.close(saved_out)
+                    os.close(saved_err)
 
 
 def _spearman(a: np.ndarray, b: np.ndarray) -> float:
@@ -466,7 +454,7 @@ class MLGBDTRecommender(BaseRecommender):
                 "n_valid": int(len(y_valid)),
             },
             "feature_importance_top10": fi or [],
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
         # Persist artifacts
@@ -590,7 +578,7 @@ class MLGBDTRecommender(BaseRecommender):
 
             gg["strategy_id"] = strategy_config["strategy_id"]
             gg["version"] = strategy_config["version"]
-            gg["generated_at"] = datetime.utcnow()
+            gg["generated_at"] = datetime.now(UTC)
             gg["reason"] = f"ml_gbdt:{ml_cfg.algo}:{ml_cfg.target}"
 
             parts.append(

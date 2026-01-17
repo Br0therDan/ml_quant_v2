@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 import numpy as np
 import pandas as pd
@@ -93,7 +93,7 @@ class FeatureCalculator:
         )
         df_long["symbol"] = symbol
         df_long["feature_version"] = version
-        df_long["computed_at"] = datetime.utcnow()
+        df_long["computed_at"] = datetime.now(UTC)
 
         # Ensure correct column order
         cols = [

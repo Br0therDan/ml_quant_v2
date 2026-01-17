@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlmodel import Session, SQLModel, col, create_engine, select
@@ -115,7 +115,7 @@ class MetaStore:
             if existing:
                 for k, v in overview.model_dump(exclude_unset=True).items():
                     setattr(existing, k, v)
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(UTC)
                 session.add(existing)
             else:
                 session.add(overview)
@@ -132,7 +132,7 @@ class MetaStore:
             if sym:
                 sym.name = overview.name
                 sym.currency = curr
-                sym.updated_at = datetime.utcnow()
+                sym.updated_at = datetime.now(UTC)
                 session.add(sym)
             else:
                 session.add(
@@ -173,7 +173,7 @@ class MetaStore:
                 existing = session.exec(stmt).first()
                 if existing:
                     existing.value = ind.value
-                    existing.updated_at = datetime.utcnow()
+                    existing.updated_at = datetime.now(UTC)
                     session.add(existing)
                 else:
                     session.add(ind)
@@ -192,7 +192,7 @@ class MetaStore:
                     session.add(art)
             session.commit()
 
-    def get_news(self, ticker: str = None, limit: int = 50) -> list[NewsArticle]:
+    def get_news(self, ticker: str | None = None, limit: int = 50) -> list[NewsArticle]:
         with self.get_session() as session:
             stmt = (
                 select(NewsArticle)

@@ -110,5 +110,5 @@ def extract_strategy_summary(content: str) -> dict[str, Any]:
             "rebalance": data.get("rebalance", {}).get("frequency", "N/A"),
             "top_k": data.get("portfolio", {}).get("top_k", "N/A"),
         }
-    except:
+    except Exception:
         return {}

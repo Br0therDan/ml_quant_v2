@@ -8,7 +8,7 @@ import re
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -260,7 +260,7 @@ class PipelineRunner:
                     }
                     for r in self.results
                 ],
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
             }
             (self.ctx.artifacts_dir / "run.json").write_text(
                 json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -306,7 +306,7 @@ class PipelineRunner:
         """Build a structured execution plan without running stages."""
         plan_run_id = (
             run_id_override
-            or f"plan_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+            or f"plan_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
         )
         artifacts_dir = settings.quant_runs_dir / plan_run_id
 
@@ -480,7 +480,7 @@ class PipelineRunner:
 
         # 1. Start Pipeline Run
         if not self.ctx.dry_run:
-            self.ctx.pipeline_started_at = datetime.utcnow().isoformat()
+            self.ctx.pipeline_started_at = datetime.now(UTC).isoformat()
             config = {
                 "strategy": str(self.ctx.strategy_path),
                 "from": self.ctx.from_date,
@@ -562,7 +562,7 @@ class PipelineRunner:
                         "run_slug": self.ctx.run_slug,
                         "display_name": self.ctx.display_name,
                         "artifacts_dir": str(self.ctx.artifacts_dir) + "/",
-                        "created_at": datetime.utcnow().isoformat(),
+                        "created_at": datetime.now(UTC).isoformat(),
                         "strategy_id": strategy_id,
                         "date_from": self.ctx.from_date,
                         "date_to": self.ctx.to_date,
@@ -604,7 +604,7 @@ class PipelineRunner:
 
         # 2. Finish Pipeline Run
         if not self.ctx.dry_run and self.ctx.pipeline_run_id:
-            self.ctx.pipeline_ended_at = datetime.utcnow().isoformat()
+            self.ctx.pipeline_ended_at = datetime.now(UTC).isoformat()
             self.ctx.exit_code = 0 if success else 1
             if success:
                 self.ctx.pipeline_status = "success"
@@ -632,7 +632,7 @@ class PipelineRunner:
     def _run_stage_wrapper(self, stage_name: str) -> bool:
         """Wraps stage execution with timing and logging."""
         log.info(f"[{stage_name.upper()}] Starting...")
-        start_ts = datetime.utcnow()
+        start_ts = datetime.now(UTC)
 
         stage_dir: Path | None = None
         if self.ctx.artifacts_dir is not None:
@@ -676,7 +676,7 @@ class PipelineRunner:
             result.error_text = str(e)
             return False
         finally:
-            end_ts = datetime.utcnow()
+            end_ts = datetime.now(UTC)
             result.duration_sec = (end_ts - start_ts).total_seconds()
             self.results.append(result)
 
@@ -697,7 +697,7 @@ class PipelineRunner:
                                     [result.error_text] if result.error_text else []
                                 ),
                                 "warnings": [],
-                                "generated_at": datetime.utcnow().isoformat(),
+                                "generated_at": datetime.now(UTC).isoformat(),
                             },
                             ensure_ascii=False,
                             indent=2,

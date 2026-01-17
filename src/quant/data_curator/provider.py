@@ -1,5 +1,6 @@
 import contextlib
 import logging
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -186,7 +187,7 @@ class AlphaVantageProvider:
             "DividendDate": "dividend_date",
             "ExDividendDate": "ex_dividend_date",
         }
-        mapped = {}
+        mapped: dict[str, Any] = {}
         for av_key, model_key in mapping.items():
             val = data.get(av_key)
             if val and val != "None":
@@ -197,14 +198,12 @@ class AlphaVantageProvider:
                     x in model_key.lower()
                     for x in ["cap", "ebitda", "revenue", "profit", "shares"]
                 ):
-                    try:
+                    with contextlib.suppress(Exception):
                         # MarketCap etc can be very large
                         mapped[model_key] = int(val)
-                    except Exception:
-                        pass
                 else:
-                    try:
+                    with contextlib.suppress(Exception):
                         mapped[model_key] = float(val)
-                    except Exception:
+                    if model_key not in mapped:
                         mapped[model_key] = val
         return mapped

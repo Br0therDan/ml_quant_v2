@@ -1,6 +1,7 @@
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
+from pathlib import Path
 
 import joblib
 import lightgbm as lgb
@@ -143,7 +144,7 @@ class MLTrainer:
                 metrics_json=json.dumps(
                     {"accuracy": float(acc), "precision": float(prec)}
                 ),
-                created_at=datetime.utcnow().isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
             )
             # Store model file path in a predictable way for V2 or add field if needed
             # For now we use artifacts/models/ as base

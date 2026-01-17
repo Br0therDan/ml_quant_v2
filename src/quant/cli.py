@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 import typer
-from rich import print
+from rich import print as rprint
 from rich.console import Console
 from rich.panel import Panel
 
@@ -34,7 +34,7 @@ def _main(ctx: typer.Context):
 
 @app.command("about")
 def about():
-    print(
+    rprint(
         Panel.fit(
             "[b]quant-lab[/b]\n"
             "- CLI-first executor (ingest/features/labels/train/score/backtest)\n"
@@ -94,11 +94,11 @@ def init_db(
             dconn.execute(schema_duck_sql)
             dconn.close()
         except Exception as de:
-            print(f"[red]DuckDB Error: {de}[/red]")
+            rprint(f"[red]DuckDB Error: {de}[/red]")
             raise de
 
         RunRegistry.run_success(run_id)
-        print(
+        rprint(
             Panel.fit(
                 f"Initialized DBs (Drop & Recreate)\n"
                 f"DuckDB: [b]{duckdb_path or settings.quant_duckdb_path}[/b]\n"
@@ -109,8 +109,8 @@ def init_db(
         )
     except Exception as e:
         RunRegistry.run_fail(run_id, str(e))
-        print(f"[red]Error during init-db: {e}[/red]")
-        raise typer.Exit(code=1)
+        rprint(f"[red]Error during init-db: {e}[/red]")
+        raise typer.Exit(code=1) from None
     finally:
         engine.dispose()
 
@@ -127,20 +127,20 @@ def symbol_register(
         with get_session() as session:
             repo = SymbolRepo(session)
             sym = repo.register_symbol(symbol)
-            print(f"Registered: [b]{sym.symbol}[/b] ({sym.name}) - {sym.currency}")
+            rprint(f"Registered: [b]{sym.symbol}[/b] ({sym.name}) - {sym.currency}")
 
         if ingest:
             from .data_curator.ingest import DataIngester
             from .data_curator.provider import AlphaVantageProvider
 
-            print(
+            rprint(
                 f"[bold green]Starting immediate ingestion for {symbol}...[/bold green]"
             )
             provider = AlphaVantageProvider(api_key=settings.alpha_vantage_api_key)
             ingester = DataIngester(provider)
             ingester.ingest_symbol(symbol, force_full=False)
             ingester.ingest_overview(symbol)
-            print(f"[bold green]Ingestion complete for {symbol}[/bold green]")
+            rprint(f"[bold green]Ingestion complete for {symbol}[/bold green]")
 
 
 @app.command("config")
@@ -157,7 +157,7 @@ def show_config():
         "quant_sqlite_path": str(settings.quant_sqlite_path),
         "quant_log_level": settings.quant_log_level,
     }
-    print(Panel.fit(str(data), title="config"))
+    rprint(Panel.fit(str(data), title="config"))
     RunRegistry.run_success(run_id)
 
 
@@ -192,7 +192,7 @@ def ingest(
 
         if not target_symbols:
             msg = "No active symbols found to ingest."
-            print(f"[yellow]{msg}[/yellow]")
+            rprint(f"[yellow]{msg}[/yellow]")
             RunRegistry.run_success(run_id)  # Technically success as nothing to do
             return
 
@@ -209,7 +209,7 @@ def ingest(
                 ingester.ingest_symbol(sym, force_full=force_full)
 
         RunRegistry.run_success(run_id)
-        print(
+        rprint(
             Panel.fit(
                 f"Ingestion Complete for {len(target_symbols)} symbols", title="ingest"
             )
@@ -218,8 +218,8 @@ def ingest(
     except Exception as e:
         log.exception("Ingestion failed")
         RunRegistry.run_fail(run_id, str(e))
-        print(f"[red]Ingestion failed: {e}[/red]")
-        raise typer.Exit(code=1)
+        rprint(f"[red]Ingestion failed: {e}[/red]")
+        raise typer.Exit(code=1) from None
 
 
 @app.command("features")
@@ -243,7 +243,7 @@ def features(
                 target_symbols = [s.symbol for s in repo.list_active_symbols()]
 
         if not target_symbols:
-            print("[yellow]No symbols found to process features.[/yellow]")
+            rprint("[yellow]No symbols found to process features.[/yellow]")
             RunRegistry.run_success(run_id)
             return
 
@@ -253,7 +253,7 @@ def features(
                 calc.run_for_symbol(sym, version=version)
 
         RunRegistry.run_success(run_id)
-        print(
+        rprint(
             Panel.fit(
                 f"Feature Computation Complete (version={version}) for {len(target_symbols)} symbols",
                 title="features",
@@ -262,8 +262,8 @@ def features(
     except Exception as e:
         log.exception("Feature calculation failed")
         RunRegistry.run_fail(run_id, str(e))
-        print(f"[red]Error computing features: {e}[/red]")
-        raise typer.Exit(code=1)
+        rprint(f"[red]Error computing features: {e}[/red]")
+        raise typer.Exit(code=1) from None
 
 
 @app.command("labels")
@@ -290,7 +290,7 @@ def labels(
                 target_symbols = [s.symbol for s in repo.list_active_symbols()]
 
         if not target_symbols:
-            print("[yellow]No symbols found to generate labels.[/yellow]")
+            rprint("[yellow]No symbols found to generate labels.[/yellow]")
             RunRegistry.run_success(run_id)
             return
 
@@ -302,7 +302,7 @@ def labels(
                 calc.run_for_symbol(sym, version=version, horizon=horizon)
 
         RunRegistry.run_success(run_id)
-        print(
+        rprint(
             Panel.fit(
                 f"Label Generation Complete (horizon={horizon}, version={version}) for {len(target_symbols)} symbols",
                 title="labels",
@@ -311,8 +311,8 @@ def labels(
     except Exception as e:
         log.exception("Label generation failed")
         RunRegistry.run_fail(run_id, str(e))
-        print(f"[red]Error generating labels: {e}[/red]")
-        raise typer.Exit(code=1)
+        rprint(f"[red]Error generating labels: {e}[/red]")
+        raise typer.Exit(code=1) from None
 
 
 @app.command()
@@ -346,9 +346,7 @@ def train(
 
                 symbols = [
                     s.symbol
-                    for s in session.exec(
-                        select(Symbol).where(Symbol.is_active)
-                    ).all()
+                    for s in session.exec(select(Symbol).where(Symbol.is_active)).all()
                 ]
 
         for symbol in symbols:
@@ -369,7 +367,7 @@ def train(
                     stability_n_runs=stability_n_runs,
                 )
 
-    print(Panel.fit(f"Training Complete ({task})", title="train"))
+    rprint(Panel.fit(f"Training Complete ({task})", title="train"))
 
 
 @app.command()
@@ -394,9 +392,7 @@ def score(
 
                 symbols = [
                     s.symbol
-                    for s in session.exec(
-                        select(Symbol).where(Symbol.is_active)
-                    ).all()
+                    for s in session.exec(select(Symbol).where(Symbol.is_active)).all()
                 ]
 
         for symbol in symbols:
@@ -405,7 +401,7 @@ def score(
             else:
                 scorer.score(symbol, model_id)
 
-    print(Panel.fit(f"Inference Complete (ensemble={ensemble})", title="score"))
+    rprint(Panel.fit(f"Inference Complete (ensemble={ensemble})", title="score"))
 
 
 @app.command("recommend")
@@ -422,7 +418,7 @@ def recommend(
     from .strategy_lab.recommender import Recommender
 
     # DuckDB Concurrency Warning
-    print(
+    rprint(
         "[bold yellow]WARNING: DuckDB write 작업 중에는 Streamlit 동시 실행을 권장하지 않습니다.[/bold yellow]"
     )
 
@@ -439,7 +435,7 @@ def recommend(
         df_raw = recommender.generate_targets(config, asof)
 
         if df_raw.empty:
-            print(
+            rprint(
                 f"[yellow]No recommendations generated for {asof}. Check features data.[/yellow]"
             )
             RunRegistry.run_success(run_id)
@@ -477,7 +473,7 @@ def recommend(
             )
 
         console.print(table)
-        print(
+        rprint(
             Panel.fit(
                 f"Targets saved to DuckDB (targets) | Run ID: {run_id}",
                 title="recommend",
@@ -487,8 +483,8 @@ def recommend(
     except Exception as e:
         log.exception("Recommendation failed")
         RunRegistry.run_fail(run_id, str(e))
-        print(f"[red]Error during recommend: {e}[/red]")
-        raise typer.Exit(code=1)
+        rprint(f"[red]Error during recommend: {e}[/red]")
+        raise typer.Exit(code=1) from None
 
 
 @app.command("backtest")
@@ -505,7 +501,7 @@ def backtest(
     from .strategy_lab.loader import StrategyLoader
 
     # DuckDB Concurrency Warning
-    print(
+    rprint(
         "[bold yellow]WARNING: DuckDB write 작업 중에는 Streamlit 동시 실행을 권장하지 않습니다.[/bold yellow]"
     )
 
@@ -525,7 +521,7 @@ def backtest(
             metrics = engine.run(config, start, end)
 
         if not metrics:
-            print(
+            rprint(
                 "[yellow]Backtest completed with no results. Check targets and price data.[/yellow]"
             )
             RunRegistry.run_success(run_id)
@@ -549,7 +545,7 @@ def backtest(
         table.add_row("Run ID", metrics["run_id"])
 
         console.print(table)
-        print(
+        rprint(
             Panel.fit(
                 f"Backtest results saved to DuckDB | Run ID: {run_id}", title="backtest"
             )
@@ -558,8 +554,8 @@ def backtest(
     except Exception as e:
         log.exception("Backtest failed")
         RunRegistry.run_fail(run_id, str(e))
-        print(f"[red]Error during backtest: {e}[/red]")
-        raise typer.Exit(code=1)
+        rprint(f"[red]Error during backtest: {e}[/red]")
+        raise typer.Exit(code=1) from None
 
 
 # --- Pipeline Command Group ---
@@ -620,10 +616,10 @@ def run_pipeline(
             if not st:
                 continue
             if st not in allowed_stages:
-                print(
+                rprint(
                     f"[red]Invalid stage: '{st}'. Allowed: {', '.join(PipelineRunner.STAGES)}[/red]"
                 )
-                raise typer.Exit(code=1)
+                raise typer.Exit(code=1) from None
             if st in seen:
                 continue
             seen.add(st)
@@ -653,11 +649,11 @@ def run_pipeline(
         d_from = date.fromisoformat(start_date)
         d_to = date.fromisoformat(end_date)
     except ValueError:
-        print("[red]Invalid date format. Use YYYY-MM-DD for --from/--to[/red]")
-        raise typer.Exit(code=1)
+        rprint("[red]Invalid date format. Use YYYY-MM-DD for --from/--to[/red]")
+        raise typer.Exit(code=1) from None
     if d_from > d_to:
-        print("[red]Invalid date range: --from must be <= --to[/red]")
-        raise typer.Exit(code=1)
+        rprint("[red]Invalid date range: --from must be <= --to[/red]")
+        raise typer.Exit(code=1) from None
 
     # 2) Parse/validate stages + symbols override
     active_stages = _parse_stages(stages)
@@ -689,8 +685,8 @@ def run_pipeline(
 
     # 3. Validation (Minimal)
     if not strategy.exists():
-        print(f"[red]Strategy file not found: {strategy}[/red]")
-        raise typer.Exit(code=1)
+        rprint(f"[red]Strategy file not found: {strategy}[/red]")
+        raise typer.Exit(code=1) from None
 
     # 4. Dry-run: compute and print plan only (no stage execution)
     if dry_run:
@@ -703,7 +699,7 @@ def run_pipeline(
         )
         runner.print_and_persist_plan(plan)
         if not plan.get("validation", {}).get("ok", False):
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
         raise typer.Exit(code=0)
 
     # 5. Run
@@ -711,10 +707,10 @@ def run_pipeline(
     success = runner.run()
 
     if not success:
-        print("[red]Pipeline Failed[/red]")
-        raise typer.Exit(code=1)
+        rprint("[red]Pipeline Failed[/red]")
+        raise typer.Exit(code=1) from None
 
-    print("[green]Pipeline Completed Successfully[/green]")
+    rprint("[green]Pipeline Completed Successfully[/green]")
 
 
 def main() -> None:

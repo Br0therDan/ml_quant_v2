@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Field, SQLModel
 
@@ -24,7 +24,7 @@ class Experiment(SQLModel, table=True):
     label_set_id: str | None = None
     split_policy_json: str | None = None
     params_json: str | None = None
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class Model(SQLModel, table=True):
@@ -38,7 +38,7 @@ class Model(SQLModel, table=True):
     feature_version: str | None = None
     label_version: str | None = None
     metrics_json: str | None = None
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class Run(SQLModel, table=True):
@@ -47,7 +47,7 @@ class Run(SQLModel, table=True):
     run_id: str = Field(primary_key=True)
     kind: str  # ingest, features, labels, train, score, recommend, backtest
     status: str  # running, success, fail
-    started_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    started_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     ended_at: str | None = None
     config_json: str | None = None
     error_text: str | None = None

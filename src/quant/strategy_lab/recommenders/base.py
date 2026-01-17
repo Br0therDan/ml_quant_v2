@@ -37,7 +37,7 @@ class BaseRecommender:
         """Fail-fast validation of recommender-specific config."""
         raise NotImplementedError
 
-    def fit(self, ctx: RecommenderContext) -> None:
+    def fit(self, _ctx: RecommenderContext) -> None:
         """Optional training step."""
         return None
 

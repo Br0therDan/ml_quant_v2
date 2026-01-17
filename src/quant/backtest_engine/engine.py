@@ -31,7 +31,9 @@ class BacktestEngine:
         self, symbols: list[str], from_date: str, to_date: str
     ) -> pd.DataFrame:
         """Load OHLCV and calculate 1d returns for given symbols and range."""
-        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
+        conn = duck_connect(
+            Path(self.db_path) if isinstance(self.db_path, str) else self.db_path
+        )
         try:
             sym_list = "', '".join(symbols)
             query = f"""
@@ -57,7 +59,10 @@ class BacktestEngine:
         self, strategy_id: str, from_date: str, to_date: str
     ) -> pd.DataFrame:
         """Load approved targets for the strategy in the given range."""
-        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path, read_only=True)
+        conn = duck_connect(
+            Path(self.db_path) if isinstance(self.db_path, str) else self.db_path,
+            read_only=True,
+        )
         try:
             query = f"""
                 SELECT study_date as ts, symbol, weight, score
@@ -259,12 +264,12 @@ class BacktestEngine:
     def save_results(
         self,
         strategy_id: str,
-        version: str,
+        _version: str,
         ledger: list[dict],
         from_ts: str,
         to_ts: str,
-        fee_bps: float,
-        slippage_bps: float,
+        _fee_bps: float,
+        _slippage_bps: float,
     ):
         if not ledger:
             return None
@@ -280,7 +285,7 @@ class BacktestEngine:
         annual_factor = 252.0
 
         # CAGR
-        cum_ret = (1.0 + daily_pnl).prod() - 1.0 # type: ignore
+        cum_ret = (1.0 + daily_pnl).prod() - 1.0  # type: ignore
         # ensure index is datetime for span calculation
         if not pd.api.types.is_datetime64_any_dtype(daily_pnl.index):
             daily_pnl.index = pd.to_datetime(daily_pnl.index)
@@ -296,7 +301,9 @@ class BacktestEngine:
         mdd = ((1 + daily_pnl).cumprod() / (1 + daily_pnl).cumprod().cummax() - 1).min()
 
         run_id = f"bt_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
+        conn = duck_connect(
+            Path(self.db_path) if isinstance(self.db_path, str) else self.db_path
+        )
         try:
             conn.execute(
                 f"""

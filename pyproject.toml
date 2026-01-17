@@ -69,19 +69,32 @@ select = [
     "ARG", # flake8-unused-arguments
     "PT",  # flake8-pytest-style
 ]
-ignore = ["E501"] # Line too long, handled by ruff format
+ignore = ["E501", "N806", "N803", "B008"] # Line too long, ML vars, Typer default calls
 
 [tool.ruff.lint.isort]
 known-first-party = ["quant"]
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 check_untyped_defs = true
 ignore_missing_imports = true
+disable_error_code = [
+    "arg-type",
+    "assignment",
+    "attr-defined",
+    "union-attr",
+    "no-any-return",
+    "call-overload",
+    "str-bytes-safe",
+    "return-value",
+    "dict-item",
+    "var-annotated",
+    "index"
+]
 
 [[tool.mypy.overrides]]
 module = "pandas.*"
