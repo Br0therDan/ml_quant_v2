@@ -79,16 +79,4 @@ class Recommender:
             duckdb_path=None,
         )
 
-        # Keep baseline behavior unchanged: single-date asof=to_date
-        if getattr(engine, "type_name", "") == "factor_rank":
-            ctx_single = RecommenderContext(
-                strategy_config=config,
-                symbols=symbols,
-                from_date=to_date,
-                to_date=to_date,
-                artifacts_dir=artifacts_dir,
-                duckdb_path=None,
-            )
-            return engine.generate_targets(ctx_single)
-
         return engine.generate_targets(ctx)

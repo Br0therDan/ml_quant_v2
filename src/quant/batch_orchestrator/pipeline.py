@@ -10,7 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ..config import settings
 from ..db.engine import get_session
@@ -161,9 +161,7 @@ def _make_run_slug(
     return slug2[:max_len], display
 
 
-def _write_progress_json(
-    artifacts_dir: Path | None, payload: dict[str, Any]
-) -> None:
+def _write_progress_json(artifacts_dir: Path | None, payload: dict[str, Any]) -> None:
     """Append machine-readable progress to pipeline.log without polluting stdout."""
     if artifacts_dir is None:
         return
@@ -188,6 +186,34 @@ class PipelineRunner:
         self.ctx = ctx
         self.results: list[StageResult] = []
         self._file_handler: logging.Handler | None = None
+
+    @contextlib.contextmanager
+    def _suppress_service_loggers(self):
+        """Temporarily suppress lower-level service logs for cleaner CLI output."""
+        service_loggers = [
+            "quant.data_curator",
+            "quant.feature_store",
+            "quant.strategy_lab",
+            "quant.ml",
+            "quant.portfolio_supervisor",
+            "quant.backtest_engine",
+        ]
+        originals = {}
+        target_level = logging.WARNING
+        # If verbose, allow DEBUG/INFO
+        if os.getenv("QUANT_VERBOSE", "0") == "1":
+            yield
+            return
+
+        for name in service_loggers:
+            l = logging.getLogger(name)
+            originals[name] = l.level
+            l.setLevel(target_level)
+        try:
+            yield
+        finally:
+            for name, level in originals.items():
+                logging.getLogger(name).setLevel(level)
 
     def _attach_file_logger(self, log_path: Path) -> None:
         """Attach a FileHandler for this pipeline run (best-effort)."""
@@ -391,10 +417,18 @@ class PipelineRunner:
                             con = duckdb.connect(self.ctx.duckdb_path, read_only=False)
 
                         for sym in symbols_resolved:
-                            n = con.execute(
+                            row = con.execute(
                                 "SELECT COUNT(*) FROM ohlcv WHERE symbol = ?",
                                 [sym],
-                            ).fetchone()[0]
+                            ).fetchone()
+                            try:
+                                n = (
+                                    int(row[0])
+                                    if row and len(row) > 0 and row[0] is not None
+                                    else 0
+                                )
+                            except Exception:
+                                n = 0
                             if not n:
                                 validation_warnings.append(
                                     f"OHLCV coverage missing: {sym}"
@@ -457,8 +491,8 @@ class PipelineRunner:
             plan, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         )
         # Use the real stdout to avoid rich/console soft-wrapping inserting newlines.
-        sys.__stdout__.write(f"PLAN_JSON: {plan_json}\n")
-        sys.__stdout__.flush()
+        sys.__stdout__.write(f"PLAN_JSON: {plan_json}\n")  # type: ignore
+        sys.__stdout__.flush()  # type: ignore
 
         plan_path = dir_path / "plan.json"
         plan_path.write_text(plan_json + "\n", encoding="utf-8")
@@ -585,16 +619,20 @@ class PipelineRunner:
 
         success = True
         try:
-            for stage_name in self.STAGES:
-                # Filter stages if specific stages requested
-                if self.ctx.active_stages and stage_name not in self.ctx.active_stages:
-                    continue
+            with self._suppress_service_loggers():
+                for stage_name in self.STAGES:
+                    # Filter stages if specific stages requested
+                    if (
+                        self.ctx.active_stages
+                        and stage_name not in self.ctx.active_stages
+                    ):
+                        continue
 
-                if not self._run_stage_wrapper(stage_name):
-                    success = False
-                    if self.ctx.fail_fast:
-                        log.error(f"Fail-fast triggered at stage: {stage_name}")
-                        break
+                    if not self._run_stage_wrapper(stage_name):
+                        success = False
+                        if self.ctx.fail_fast:
+                            log.error(f"Fail-fast triggered at stage: {stage_name}")
+                            break
         except Exception as e:
             log.exception("Pipeline crashed")
             success = False
@@ -631,6 +669,11 @@ class PipelineRunner:
 
     def _run_stage_wrapper(self, stage_name: str) -> bool:
         """Wraps stage execution with timing and logging."""
+        from rich.console import Console
+
+        console = Console(stderr=True)
+        console.rule(f"[bold white]{stage_name.upper()}[/bold white]")
+
         log.info(f"[{stage_name.upper()}] Starting...")
         start_ts = datetime.now(UTC)
 
@@ -731,6 +774,15 @@ class PipelineRunner:
 
 
 def run_ingest(ctx: PipelineContext) -> str:
+    from rich.console import Console
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
     from ..data_curator.ingest import DataIngester
     from ..data_curator.provider import AlphaVantageProvider
 
@@ -742,12 +794,47 @@ def run_ingest(ctx: PipelineContext) -> str:
     }
     run_id = RunRegistry.run_start("ingest", config)
 
+    # Suppress service-level spam during pipeline run
+    ingest_logger = logging.getLogger("quant.data_curator.ingest")
+    original_level = ingest_logger.level
+    ingest_logger.setLevel(logging.WARNING)
+
     try:
-        provider = AlphaVantageProvider(api_key=settings.alpha_vantage_api_key)
+        api_key = settings.alpha_vantage_api_key
+        if api_key is None:
+            raise ValueError(
+                "Alpha Vantage API key is not configured: set settings.alpha_vantage_api_key"
+            )
+        provider = AlphaVantageProvider(api_key=api_key)
         ingester = DataIngester(provider)
 
-        for sym in ctx.symbols:
-            ingester.ingest_symbol(sym, force_full=False)
+        console = Console(stderr=True)
+        with Progress(
+            TextColumn("[bold cyan]INGEST[/bold cyan]"),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Ingesting symbols", total=len(ctx.symbols))
+            for i, sym in enumerate(ctx.symbols, start=1):
+                progress.update(task, description=f"Ingesting {sym}")
+                ingester.ingest_symbol(sym, force_full=False)
+                _write_progress_json(
+                    ctx.artifacts_dir,
+                    {
+                        "run_id": ctx.pipeline_run_id,
+                        "stage": "ingest",
+                        "stage_exec_id": run_id,
+                        "event": "symbol_done",
+                        "current": i,
+                        "total": len(ctx.symbols),
+                        "symbol": sym,
+                    },
+                )
+                progress.advance(task)
 
         ctx.stage_meta = {
             "n_symbols": len(ctx.symbols),
@@ -759,9 +846,20 @@ def run_ingest(ctx: PipelineContext) -> str:
     except Exception as e:
         RunRegistry.run_fail(run_id, str(e))
         raise e
+    finally:
+        ingest_logger.setLevel(original_level)
 
 
 def run_features(ctx: PipelineContext) -> str:
+    from rich.console import Console
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
     from ..feature_store.features import FeatureCalculator
 
     config = {
@@ -771,10 +869,41 @@ def run_features(ctx: PipelineContext) -> str:
     }
     run_id = RunRegistry.run_start("features", config)
 
+    # Suppress service-level spam
+    feat_logger = logging.getLogger("quant.feature_store.features")
+    original_level = feat_logger.level
+    feat_logger.setLevel(logging.WARNING)
+
     try:
         calc = FeatureCalculator()
-        for sym in ctx.symbols:
-            calc.run_for_symbol(sym, version="v1")
+
+        console = Console(stderr=True)
+        with Progress(
+            TextColumn("[bold cyan]FEATURES[/bold cyan]"),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Calculating features", total=len(ctx.symbols))
+            for i, sym in enumerate(ctx.symbols, start=1):
+                progress.update(task, description=f"Processing {sym}")
+                calc.run_for_symbol(sym, version="v1")
+                _write_progress_json(
+                    ctx.artifacts_dir,
+                    {
+                        "run_id": ctx.pipeline_run_id,
+                        "stage": "features",
+                        "stage_exec_id": run_id,
+                        "event": "symbol_done",
+                        "current": i,
+                        "total": len(ctx.symbols),
+                        "symbol": sym,
+                    },
+                )
+                progress.advance(task)
 
         ctx.stage_meta = {
             "n_symbols": len(ctx.symbols),
@@ -787,9 +916,20 @@ def run_features(ctx: PipelineContext) -> str:
     except Exception as e:
         RunRegistry.run_fail(run_id, str(e))
         raise e
+    finally:
+        feat_logger.setLevel(original_level)
 
 
 def run_labels(ctx: PipelineContext) -> str:
+    from rich.console import Console
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
     from ..feature_store.labels import LabelCalculator
 
     config = {
@@ -800,10 +940,41 @@ def run_labels(ctx: PipelineContext) -> str:
     }
     run_id = RunRegistry.run_start("labels", config)
 
+    # Suppress service-level spam
+    lbl_logger = logging.getLogger("quant.feature_store.labels")
+    original_level = lbl_logger.level
+    lbl_logger.setLevel(logging.WARNING)
+
     try:
         calc = LabelCalculator()
-        for sym in ctx.symbols:
-            calc.run_for_symbol(sym, version="v1", horizon=60)
+
+        console = Console(stderr=True)
+        with Progress(
+            TextColumn("[bold cyan]LABELS[/bold cyan]"),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Calculating labels", total=len(ctx.symbols))
+            for i, sym in enumerate(ctx.symbols, start=1):
+                progress.update(task, description=f"Processing {sym}")
+                calc.run_for_symbol(sym, version="v1", horizon=60)
+                _write_progress_json(
+                    ctx.artifacts_dir,
+                    {
+                        "run_id": ctx.pipeline_run_id,
+                        "stage": "labels",
+                        "stage_exec_id": run_id,
+                        "event": "symbol_done",
+                        "current": i,
+                        "total": len(ctx.symbols),
+                        "symbol": sym,
+                    },
+                )
+                progress.advance(task)
 
         ctx.stage_meta = {
             "n_symbols": len(ctx.symbols),
@@ -817,6 +988,8 @@ def run_labels(ctx: PipelineContext) -> str:
     except Exception as e:
         RunRegistry.run_fail(run_id, str(e))
         raise e
+    finally:
+        lbl_logger.setLevel(original_level)
 
 
 def run_recommend(ctx: PipelineContext) -> str:
@@ -993,7 +1166,7 @@ def run_recommend(ctx: PipelineContext) -> str:
 
                 # Stage metadata for UI / run.json
                 top_k = (
-                    int(rec_cfg.get("top_k"))
+                    int(cast(int, rec_cfg.get("top_k")))
                     if rec_type == "ml_gbdt" and rec_cfg.get("top_k") is not None
                     else int((strategy_config.get("portfolio") or {}).get("top_k", 0))
                 )

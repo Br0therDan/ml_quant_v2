@@ -141,7 +141,7 @@ class FeatureCalculator:
                 conn.execute("ROLLBACK")
                 raise e
 
-            logger.info(
+            logger.debug(
                 f"Successfully saved {len(df_long)} feature rows for {symbol} (version={version})"
             )
         finally:
@@ -149,7 +149,7 @@ class FeatureCalculator:
 
     def run_for_symbol(self, symbol: str, version: str = "v1"):
         """Run the full calculation and save pipeline for a symbol."""
-        logger.info(f"Calculating features for {symbol} (version={version})")
+        logger.debug(f"Calculating features for {symbol} (version={version})")
         df_ohlcv = self.load_ohlcv(symbol)
         if df_ohlcv.empty:
             logger.warning(f"No OHLCV data found for {symbol}")

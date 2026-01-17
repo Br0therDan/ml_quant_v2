@@ -113,7 +113,7 @@ class LabelCalculator:
                 conn.execute("ROLLBACK")
                 raise e
 
-            logger.info(
+            logger.debug(
                 f"Successfully saved {len(df_long)} label rows for {symbol} (version={version})"
             )
         finally:
@@ -121,7 +121,7 @@ class LabelCalculator:
 
     def run_for_symbol(self, symbol: str, version: str = "v1", horizon: int = 60):
         """Run the full calculation and save pipeline for a symbol."""
-        logger.info(
+        logger.debug(
             f"Calculating labels for {symbol} (version={version}, horizon={horizon})"
         )
         df_ohlcv = self.load_ohlcv(symbol)

@@ -79,11 +79,20 @@ def read_pipeline_log(run_id: str) -> str | None:
         return None
 
 
-def tail_pipeline_log(run_id: str, *, lines: int = 200) -> str:
+def tail_pipeline_log(
+    run_id: str, *, lines: int = 200, filter_progress: bool = True
+) -> str:
     text = read_pipeline_log(run_id)
     if not text:
         return "No pipeline.log found."
     all_lines = text.splitlines()
+
+    if filter_progress:
+        # Filter out machine-readable PROGRESS_JSON lines
+        all_lines = [
+            line for line in all_lines if not line.strip().startswith("PROGRESS_JSON:")
+        ]
+
     return "\n".join(all_lines[-lines:])
 
 

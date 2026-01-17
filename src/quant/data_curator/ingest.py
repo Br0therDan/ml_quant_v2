@@ -20,7 +20,9 @@ class DataIngester:
 
     def get_latest_ts(self, symbol: str) -> datetime | None:
         """Get the latest timestamp for a symbol from DuckDB."""
-        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
+        conn = duck_connect(
+            Path(self.db_path) if isinstance(self.db_path, str) else self.db_path
+        )
         try:
             res = conn.execute(
                 "SELECT max(ts) FROM ohlcv WHERE symbol = ?", [symbol]
@@ -42,16 +44,16 @@ class DataIngester:
 
         if not latest_ts or force_full:
             outputsize = "full"
-            logger.info(f"Initial ingestion for {symbol} (outputsize=full)")
+            logger.debug(f"Initial ingestion for {symbol} (outputsize=full)")
         else:
-            logger.info(f"Incremental ingestion for {symbol} (latest_ts={latest_ts})")
+            logger.debug(f"Incremental ingestion for {symbol} (latest_ts={latest_ts})")
 
         # 1. Fetch
         df = self.provider.get_daily_ohlcv(symbol, outputsize=outputsize)
 
         # 1.5. Apply Adjustments (Handle splits/dividends)
         if not df.empty and "adjusted_close" in df.columns:
-            logger.info(f"Applying adjustments for {symbol}")
+            logger.debug(f"Applying adjustments for {symbol}")
             # Standard back-adjustment: adj_factor = adj_close / close
             # We avoid division by zero just in case
             adj_factor = df["adjusted_close"] / df["close"].replace(0, 1)
@@ -67,11 +69,13 @@ class DataIngester:
         if latest_ts and not force_full:
             df = df[df.index > pd.Timestamp(latest_ts)]
             if df.empty:
-                logger.info(f"No new data for {symbol}")
+                logger.debug(f"No new data for {symbol}")
                 return
 
         # 4. Save to DuckDB
-        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
+        conn = duck_connect(
+            Path(self.db_path) if isinstance(self.db_path, str) else self.db_path
+        )
         try:
             # DEBUG: What is 'ohlcv' REALLY?
             print(
@@ -98,7 +102,9 @@ class DataIngester:
             # Ensure ts is a date string for DuckDB CSV parser or direct load
             df["ts"] = pd.to_datetime(df["ts"]).dt.strftime("%Y-%m-%d")
             # Ensure ingested_at is a string
-            df["ingested_at"] = pd.to_datetime(df["ingested_at"]).dt.strftime("%Y-%m-%d %H:%M:%S")
+            df["ingested_at"] = pd.to_datetime(df["ingested_at"]).dt.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
 
             # Use a more robust way: Delete matching and Insert
             # We use the pandas dataframe 'df' as a source
@@ -118,7 +124,7 @@ class DataIngester:
                 conn.execute("ROLLBACK")
                 raise e
 
-            logger.info(f"Successfully ingested {len(df)} rows for {symbol}")
+            logger.debug(f"Successfully ingested {len(df)} rows for {symbol}")
         finally:
             conn.close()
 
@@ -127,7 +133,7 @@ class DataIngester:
         from ..db.metastore import MetaStore
         from ..models.market import CompanyOverview
 
-        logger.info(f"Fetching overview for {symbol}")
+        logger.debug(f"Fetching overview for {symbol}")
         data = self.provider.get_overview(symbol)
         if not data:
             logger.warning(f"No overview data for {symbol}")
@@ -142,7 +148,7 @@ class DataIngester:
                 overview = CompanyOverview(**data)
                 session.merge(overview)
                 session.commit()
-            logger.info(f"Saved overview for {symbol}")
+            logger.debug(f"Saved overview for {symbol}")
         except Exception as e:
             logger.error(f"Failed to save overview for {symbol}: {e}")
 

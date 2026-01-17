@@ -39,7 +39,7 @@ st.caption("이 페이지는 파이프라인(Batch/End-to-End) 오케스트레�
 col_controls, col_results = st.columns([0.3, 0.7], gap="small")
 
 
-@st.dialog("Live Run Log", width="large")
+@st.dialog("Live Run Log", width="medium")
 def _live_log_dialog(run_id: str) -> None:
     st.caption("실행 중인 로그를 artifacts(pipeline.log)에서 tail로 표시합니다.")
 
@@ -136,7 +136,7 @@ with col_controls:
         today = datetime.today()
         c1, c2 = st.columns(2)
         with c1:
-            start_date = st.date_input("From", today - timedelta(days=30))
+            start_date = st.date_input("From", today - timedelta(days=365))
         with c2:
             end_date = st.date_input("To", today)
 
@@ -171,11 +171,10 @@ with col_controls:
             strategies_dir / selected_strategy if selected_strategy else None
         )
 
-        st.subheader("Plan / Run")
 
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button("Dry Run (Plan)", width="stretch"):
+            if st.button("Plan", width="stretch"):
                 if not strategy_path:
                     st.error("Please select a strategy.")
                 else:
@@ -227,7 +226,7 @@ with col_controls:
             plan = st.session_state.get("plan")
             plan_ok = bool(plan and plan.get("validation", {}).get("ok"))
             if st.button(
-                "Run (Execute)",
+                "Execute",
                 type="primary",
                 width="stretch",
                 disabled=not plan_ok,
@@ -443,6 +442,18 @@ with col_results:
                     st.success("Status: SUCCEEDED")
                 elif effective_status == "fail":
                     st.error("Status: FAILED")
+                    # Pop-up for failure notification
+                    if st.session_state.get("active_run_id") == run_id:
+                        # Clear active_run_id after showing error once to prevent persistent popup if desired,
+                        # but usually st.error is enough. The user specifically asked for "경고 팝업".
+                        # Streamlit's toast could work, but a dialog is a "popup".
+                        st.toast(f"Pipeline Failed: {run_id}", icon="❌")
+
+                        # Show error details if available in run_json
+                        err_text = run_json.get("error_text")
+                        if err_text:
+                            st.warning(f"Error Detail: {err_text}")
+
                 elif effective_status == "running" or running:
                     st.info("Status: RUNNING")
                 else:

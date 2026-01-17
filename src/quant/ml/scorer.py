@@ -79,7 +79,7 @@ class MLScorer:
                 }
             )
             self.series_store.save_predictions(df_res)
-            logger.info(f"Saved {len(df_res)} predictions for {symbol}")
+            logger.debug(f"Saved {len(df_res)} predictions for {symbol}")
         except Exception as e:
             logger.error(f"Scoring failed for {symbol}: {e}")
 
