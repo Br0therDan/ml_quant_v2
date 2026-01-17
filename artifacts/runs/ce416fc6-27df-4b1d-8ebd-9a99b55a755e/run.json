@@ -1,9 +1,0 @@
-{
-  "run_id": "ce416fc6-27df-4b1d-8ebd-9a99b55a755e",
-  "kind": "symbol-register",
-  "status": "running",
-  "started_at": "2026-01-17T03:12:31.722522+00:00",
-  "invoked_command": "uv run quant symbol-register PLTR",
-  "artifacts_dir": "artifacts/runs/ce416fc6-27df-4b1d-8ebd-9a99b55a755e/",
-  "generated_at": "2026-01-17T03:12:31.722522+00:00"
-}

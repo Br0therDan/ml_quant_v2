@@ -1,9 +1,0 @@
-{
-  "run_id": "21c05567-3d0f-4e3e-9386-133cac06e8bb",
-  "kind": "symbol-register",
-  "status": "running",
-  "started_at": "2026-01-16T11:21:39.038956+00:00",
-  "invoked_command": "uv run quant symbol-register AMD --ingest",
-  "artifacts_dir": "artifacts/runs/21c05567-3d0f-4e3e-9386-133cac06e8bb/",
-  "generated_at": "2026-01-16T11:21:39.038956+00:00"
-}

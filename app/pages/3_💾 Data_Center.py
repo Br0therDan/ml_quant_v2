@@ -36,7 +36,7 @@ with col_controls:
         # 1. Symbol Search & Registration
         with st.expander("🔍 Symbol Search & Registration", expanded=True):
             search_query = st.text_input(
-                "Search Symbol (Alpha Vantage)", placeholder="e.g. NVDA, AAPL"
+                "Search Symbol", placeholder="e.g. NVDA, AAPL"
             )
             if st.button("Search", width="stretch") or search_query:
                 if search_query:

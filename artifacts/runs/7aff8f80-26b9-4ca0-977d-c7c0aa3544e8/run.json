@@ -1,9 +1,0 @@
-{
-  "run_id": "7aff8f80-26b9-4ca0-977d-c7c0aa3544e8",
-  "kind": "symbol-register",
-  "status": "running",
-  "started_at": "2026-01-17T03:13:11.940866+00:00",
-  "invoked_command": "uv run quant symbol-register IONQ",
-  "artifacts_dir": "artifacts/runs/7aff8f80-26b9-4ca0-977d-c7c0aa3544e8/",
-  "generated_at": "2026-01-17T03:13:11.940866+00:00"
-}
