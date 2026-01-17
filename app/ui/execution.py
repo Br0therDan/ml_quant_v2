@@ -21,8 +21,7 @@ def _legacy_log_dir() -> Path:
 
     enabled = os.getenv("QUANT_UI_ENABLE_LEGACY_LOGS", "0") == "1"
     p = settings.quant_data_dir.parent / "logs" / "ui_exec"
-    if enabled:
-        p.mkdir(parents=True, exist_ok=True)
+    p.mkdir(parents=True, exist_ok=True)
     return p
 
 

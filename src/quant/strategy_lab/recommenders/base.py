@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -18,8 +18,8 @@ class RecommenderContext:
     symbols: list[str]
     from_date: str
     to_date: str
-    artifacts_dir: Optional[Path] = None
-    duckdb_path: Optional[Path] = None
+    artifacts_dir: Path | None = None
+    duckdb_path: Path | None = None
 
 
 class BaseRecommender:

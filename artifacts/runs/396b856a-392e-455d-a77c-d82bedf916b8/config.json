@@ -1,0 +1,13 @@
+{
+  "strategy": "strategies/example.yaml",
+  "from": "2025-12-18",
+  "to": "2026-01-17",
+  "symbols": [
+    "NVDA"
+  ],
+  "stages": [
+    "ingest"
+  ],
+  "fail_fast": true,
+  "invoked_command": "/Users/donghakim/ml_quant_v2/.venv/bin/quant pipeline run --strategy strategies/example.yaml --from 2025-12-18 --to 2026-01-17 --run-id 396b856a-392e-455d-a77c-d82bedf916b8 --symbols NVDA --stages ingest"
+}

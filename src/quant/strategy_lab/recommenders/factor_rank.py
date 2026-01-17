@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
-from ...db.duck import connect as duck_connect
 from ...config import settings
+from ...db.duck import connect as duck_connect
 from .base import BaseRecommender, RecommenderContext
 
 
@@ -16,7 +16,7 @@ class FactorRankRecommender(BaseRecommender):
 
     type_name = "factor_rank"
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path or str(settings.quant_duckdb_path)
 
     def validate(self, config: dict[str, Any]) -> None:
@@ -42,7 +42,7 @@ class FactorRankRecommender(BaseRecommender):
         version: str,
         feature_name: str,
         asof: str,
-        symbols: Optional[list[str]] = None,
+        symbols: list[str] | None = None,
     ) -> pd.DataFrame:
         conn = duck_connect(Path(self.db_path))
         try:

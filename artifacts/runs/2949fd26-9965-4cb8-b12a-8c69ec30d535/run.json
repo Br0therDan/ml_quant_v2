@@ -1,0 +1,9 @@
+{
+  "run_id": "2949fd26-9965-4cb8-b12a-8c69ec30d535",
+  "kind": "symbol-register",
+  "status": "running",
+  "started_at": "2026-01-17T06:06:24.290288+00:00",
+  "invoked_command": "uv run quant symbol-register NVDA",
+  "artifacts_dir": "artifacts/runs/2949fd26-9965-4cb8-b12a-8c69ec30d535/",
+  "generated_at": "2026-01-17T06:06:24.290288+00:00"
+}

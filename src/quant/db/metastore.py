@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from pathlib import Path
 
 from sqlmodel import Session, SQLModel, col, create_engine, select
 
@@ -53,10 +54,9 @@ class MetaStore:
         """Seed initial data from static CSVs (Crypto, Forex)."""
         import csv
 
-        # Static CSVs are now assumed to be in the market_data/static directory
-        # We need to find its path relative to this file or project root
-        project_root = Path(__file__).parent.parent.parent.parent
-        static_dir = project_root / "market_data" / "static"
+        # Static CSVs moved to data_curator/static
+        current_dir = Path(__file__).parent  # src/quant/db
+        static_dir = current_dir.parent / "data_curator" / "static"
 
         # 1. Crypto
         crypto_path = os.path.join(static_dir, "crypto_symbols.csv")

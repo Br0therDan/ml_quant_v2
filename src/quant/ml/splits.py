@@ -1,5 +1,5 @@
+
 import pandas as pd
-from typing import List, Tuple
 
 
 def get_time_series_splits(
@@ -8,7 +8,7 @@ def get_time_series_splits(
     train_size: int = 252,  # 1 year of trading days
     test_size: int = 60,  # target horizon
     gap: int = 60,  # purge gap to prevent leakage (set to horizon)
-) -> List[Tuple[pd.DatetimeIndex, pd.DatetimeIndex]]:
+) -> list[tuple[pd.DatetimeIndex, pd.DatetimeIndex]]:
     """
     Time-series Walk-forward splits.
     Returns list of (train_idx, test_idx)

@@ -1,9 +1,7 @@
-import subprocess
 import os
-import signal
-from pathlib import Path
+import subprocess
 from datetime import datetime
-from typing import List, Optional
+from pathlib import Path
 
 RUNS_DIR = Path("artifacts/runs")
 
@@ -14,10 +12,10 @@ class PipelineRunner:
         strategy_path: str,
         start_date: str,
         end_date: str,
-        symbols: List[str] = None,
+        symbols: list[str] = None,
         dry_run: bool = False,
-        stages: List[str] = None,
-    ) -> Optional[str]:
+        stages: list[str] = None,
+    ) -> str | None:
         """
         Start pipeline via 'uv run quant pipeline run'.
         Returns run_id.
@@ -62,7 +60,7 @@ class PipelineRunner:
             return "Log file not found."
 
         try:
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 lines = f.readlines()
                 return "".join(lines[-n_lines:])
         except Exception as e:

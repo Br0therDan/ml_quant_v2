@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 import json
+import os
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from datetime import datetime
-import os
 from pathlib import Path
-from typing import Any, Optional
-from contextlib import contextmanager
+from typing import Any
 
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
 
 from ...config import settings
 from ...db.duck import connect as duck_connect
 from .base import BaseRecommender, RecommenderContext
-
 
 _DEFAULT_FEATURESET_V1 = [
     "ret_1d",
@@ -78,10 +77,8 @@ def _redirect_fds_to_file(path: Path):
                     f.flush()
                 except Exception:
                     pass
-                try:
+                with suppress(Exception):
                     f.close()
-                except Exception:
-                    pass
 
 
 @contextmanager
@@ -109,10 +106,8 @@ def _redirect_fds_to_devnull():
             except Exception:
                 pass
             if f is not None:
-                try:
+                with suppress(Exception):
                     f.close()
-                except Exception:
-                    pass
 
 
 def _spearman(a: np.ndarray, b: np.ndarray) -> float:
@@ -142,7 +137,7 @@ class MLGBDTRecommender(BaseRecommender):
 
     type_name = "ml_gbdt"
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = Path(db_path) if db_path else settings.quant_duckdb_path
         self._model = None
         self._feature_names: list[str] = []
@@ -446,7 +441,7 @@ class MLGBDTRecommender(BaseRecommender):
 
         fi = None
         if hasattr(model, "feature_importances_"):
-            imp = np.asarray(getattr(model, "feature_importances_"), dtype=float)
+            imp = np.asarray(model.feature_importances_, dtype=float)
             order = np.argsort(-imp)
             fi = [
                 {"feature": feature_cols[i], "importance": float(imp[i])}
@@ -581,7 +576,7 @@ class MLGBDTRecommender(BaseRecommender):
         df_pred["asof"] = df_pred["ts"].apply(lambda t: t.strftime("%Y-%m-%d"))
 
         parts: list[pd.DataFrame] = []
-        for asof, g in df_pred.groupby("asof"):
+        for _asof, g in df_pred.groupby("asof"):
             gg = g.sort_values("score", ascending=False).head(top_k).copy()
             if gg.empty:
                 continue

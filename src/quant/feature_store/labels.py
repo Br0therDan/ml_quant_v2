@@ -1,16 +1,16 @@
 import logging
-import pandas as pd
+
 import numpy as np
-from datetime import datetime
-from typing import List, Optional
-from ..db.duck import connect as duck_connect
+import pandas as pd
+
 from ..config import settings
+from ..db.duck import connect as duck_connect
 
 logger = logging.getLogger(__name__)
 
 
 class LabelCalculator:
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path or settings.quant_duckdb_path
 
     def load_ohlcv(self, symbol: str) -> pd.DataFrame:

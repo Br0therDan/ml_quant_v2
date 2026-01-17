@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
 from .recommenders import (
     BaseRecommender,
-    RecommenderContext,
     FactorRankRecommender,
     MLGBDTRecommender,
+    RecommenderContext,
 )
 
 
@@ -23,7 +23,7 @@ class Recommender:
     - ml_gbdt (GBDT POC) when strategy YAML specifies recommender.type=ml_gbdt.
     """
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path
 
     def _select_engine(self, strategy_config: dict[str, Any]) -> BaseRecommender:
@@ -59,7 +59,7 @@ class Recommender:
         symbols: list[str],
         from_date: str,
         to_date: str,
-        artifacts_dir: Optional[Path] = None,
+        artifacts_dir: Path | None = None,
     ) -> pd.DataFrame:
         """Pipeline API: generate targets for a date window.
 

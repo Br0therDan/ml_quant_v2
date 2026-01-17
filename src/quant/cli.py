@@ -2,26 +2,21 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import List, Optional
 from pathlib import Path
 
 import typer
 from rich import print
+from rich.console import Console
 from rich.panel import Panel
 
-from .logging import setup_logging
 from .config import settings
 from .db.duck import connect as duck_connect
 from .db.engine import get_engine, get_session
-from .models.meta import SQLModel, Symbol
+from .logging import setup_logging
+from .ml.scorer import MLScorer
+from .ml.trainer import MLTrainer
+from .models.meta import SQLModel
 from .repos.symbol import SymbolRepo
-from .services.market_data import MarketDataService
-from .services.feature import FeatureService
-from .services.label import LabelService
-from .services.ml import MLService
-from .services.portfolio import PortfolioService
-from .services.backtest import BacktestService
-from rich.console import Console
 
 console = Console()
 app = typer.Typer(add_completion=False)
@@ -122,26 +117,30 @@ def init_db(
 
 @app.command("symbol-register")
 def symbol_register(
-    symbol: str,
+    symbols: list[str] = typer.Argument(..., help="List of symbols to register"),
     ingest: bool = typer.Option(
         False, "--ingest", help="Immediately ingest OHLCV after registration"
     ),
 ):
-    """Register a symbol via market_data client and save to SQLite."""
-    with get_session() as session:
-        repo = SymbolRepo(session)
-        sym = repo.register_symbol(symbol)
-        print(f"Registered: [b]{sym.symbol}[/b] ({sym.name}) - {sym.currency}")
+    """Register one or more symbols via AlphaVantageProvider and save to SQLite."""
+    for symbol in symbols:
+        with get_session() as session:
+            repo = SymbolRepo(session)
+            sym = repo.register_symbol(symbol)
+            print(f"Registered: [b]{sym.symbol}[/b] ({sym.name}) - {sym.currency}")
 
-    if ingest:
-        from .data_curator.provider import AlphaVantageProvider
-        from .data_curator.ingest import DataIngester
+        if ingest:
+            from .data_curator.ingest import DataIngester
+            from .data_curator.provider import AlphaVantageProvider
 
-        print(f"[bold green]Starting immediate ingestion for {symbol}...[/bold green]")
-        provider = AlphaVantageProvider(api_key=settings.alpha_vantage_api_key)
-        ingester = DataIngester(provider)
-        ingester.ingest_symbol(symbol, force_full=False)
-        print(f"[bold green]Ingestion complete for {symbol}[/bold green]")
+            print(
+                f"[bold green]Starting immediate ingestion for {symbol}...[/bold green]"
+            )
+            provider = AlphaVantageProvider(api_key=settings.alpha_vantage_api_key)
+            ingester = DataIngester(provider)
+            ingester.ingest_symbol(symbol, force_full=False)
+            ingester.ingest_overview(symbol)
+            print(f"[bold green]Ingestion complete for {symbol}[/bold green]")
 
 
 @app.command("config")
@@ -173,9 +172,9 @@ def ingest(
     ),
 ):
     """Ingest OHLCV from Alpha Vantage into DuckDB (V2 Ingester)."""
-    from .repos.run_registry import RunRegistry
-    from .data_curator.provider import AlphaVantageProvider
     from .data_curator.ingest import DataIngester
+    from .data_curator.provider import AlphaVantageProvider
+    from .repos.run_registry import RunRegistry
     from .repos.symbol import SymbolRepo
 
     run_id = RunRegistry.run_start(
@@ -225,12 +224,12 @@ def ingest(
 
 @app.command("features")
 def features(
-    symbols: Optional[List[str]] = typer.Option(None, "--symbols", "-s"),
+    symbols: list[str] | None = typer.Option(None, "--symbols", "-s"),
     version: str = typer.Option("v1", "--feature-version", "-v"),
 ):
     """Compute features into DuckDB (V2 Feature Store)."""
-    from .repos.run_registry import RunRegistry
     from .feature_store.features import FeatureCalculator
+    from .repos.run_registry import RunRegistry
     from .repos.symbol import SymbolRepo
 
     run_id = RunRegistry.run_start("features", {"symbols": symbols, "version": version})
@@ -269,13 +268,13 @@ def features(
 
 @app.command("labels")
 def labels(
-    symbols: Optional[List[str]] = typer.Option(None, "--symbols", "-s"),
+    symbols: list[str] | None = typer.Option(None, "--symbols", "-s"),
     horizon: int = typer.Option(60, "--horizon", "-h"),
     version: str = typer.Option("v1", "--label-version", "-v"),
 ):
     """Generate labels into DuckDB (V2 Label Store)."""
-    from .repos.run_registry import RunRegistry
     from .feature_store.labels import LabelCalculator
+    from .repos.run_registry import RunRegistry
     from .repos.symbol import SymbolRepo
 
     run_id = RunRegistry.run_start(
@@ -318,7 +317,7 @@ def labels(
 
 @app.command()
 def train(
-    symbols: Optional[List[str]] = typer.Option(None, "--symbols", "-s"),
+    symbols: list[str] | None = typer.Option(None, "--symbols", "-s"),
     feature_version: str = typer.Option("v1", "--f-ver"),
     label_version: str = typer.Option("v1", "--l-ver"),
     horizon: int = typer.Option(60, "--horizon", "-h"),
@@ -334,7 +333,7 @@ def train(
     with console.status(
         f"[bold green]Training {task} models (FS={feature_selection})..."
     ):
-        service = MLService()
+        trainer = MLTrainer()
         if symbols is None:
             # Active 모든 심볼
             from .db.metastore import MetaStore
@@ -342,25 +341,26 @@ def train(
             meta = MetaStore()
             with meta.get_session() as session:
                 from sqlmodel import select
+
                 from .models import Symbol
 
                 symbols = [
                     s.symbol
                     for s in session.exec(
-                        select(Symbol).where(Symbol.is_active == True)
+                        select(Symbol).where(Symbol.is_active)
                     ).all()
                 ]
 
         for symbol in symbols:
             if task == "experts":
-                service.train_experts(
+                trainer.train_experts(
                     symbol,
                     feature_version=feature_version,
                     label_version=label_version,
                     horizon=horizon,
                 )
             else:
-                service.train_baseline(
+                trainer.train_baseline(
                     symbol,
                     feature_version,
                     label_version,
@@ -374,35 +374,36 @@ def train(
 
 @app.command()
 def score(
-    symbols: Optional[List[str]] = typer.Option(None, "--symbols", "-s"),
-    model_id: Optional[str] = typer.Option(None, "--model-id"),
+    symbols: list[str] | None = typer.Option(None, "--symbols", "-s"),
+    model_id: str | None = typer.Option(None, "--model-id"),
     ensemble: bool = typer.Option(
         False, "--ensemble", help="Use expert ensemble (Gating)"
     ),
 ):
     """Generate predictions (Score)."""
     with console.status(f"[bold green]Scoring symbols (ensemble={ensemble})..."):
-        service = MLService()
+        scorer = MLScorer()
         if symbols is None:
             from .db.metastore import MetaStore
 
             meta = MetaStore()
             with meta.get_session() as session:
                 from sqlmodel import select
+
                 from .models import Symbol
 
                 symbols = [
                     s.symbol
                     for s in session.exec(
-                        select(Symbol).where(Symbol.is_active == True)
+                        select(Symbol).where(Symbol.is_active)
                     ).all()
                 ]
 
         for symbol in symbols:
             if ensemble:
-                service.score_ensemble(symbol)
+                scorer.score_ensemble(symbol)
             else:
-                service.score(symbol, model_id)
+                scorer.score(symbol, model_id)
 
     print(Panel.fit(f"Inference Complete (ensemble={ensemble})", title="score"))
 
@@ -415,10 +416,10 @@ def recommend(
     asof: str = typer.Option(..., "--asof", "-a", help="Target date YYYY-MM-DD"),
 ):
     """Generate portfolio recommendations (V2 Strategy Lab)."""
+    from .portfolio_supervisor.engine import PortfolioSupervisor
     from .repos.run_registry import RunRegistry
     from .strategy_lab.loader import StrategyLoader
     from .strategy_lab.recommender import Recommender
-    from .portfolio_supervisor.engine import PortfolioSupervisor
 
     # DuckDB Concurrency Warning
     print(
@@ -499,9 +500,9 @@ def backtest(
     end: str = typer.Option(..., "--to", "-t", help="End date YYYY-MM-DD"),
 ):
     """Run backtest simulation (V2 Backtest Engine)."""
+    from .backtest_engine.engine import BacktestEngine
     from .repos.run_registry import RunRegistry
     from .strategy_lab.loader import StrategyLoader
-    from .backtest_engine.engine import BacktestEngine
 
     # DuckDB Concurrency Warning
     print(
@@ -571,15 +572,15 @@ def run_pipeline(
     strategy: Path = typer.Option(..., "--strategy", help="Path to strategy YAML"),
     start_date: str = typer.Option(..., "--from", help="Start date YYYY-MM-DD"),
     end_date: str = typer.Option(..., "--to", help="End date YYYY-MM-DD"),
-    run_id: Optional[str] = typer.Option(
+    run_id: str | None = typer.Option(
         None,
         "--run-id",
         help="Optional run_id UUID. If non-UUID is given, it is treated as a run slug (display alias) and a UUID run_id is generated.",
     ),
-    symbols: Optional[List[str]] = typer.Option(
+    symbols: list[str] | None = typer.Option(
         None, "--symbols", help="Override symbols"
     ),
-    stages: Optional[str] = typer.Option(
+    stages: str | None = typer.Option(
         None,
         "--stages",
         help="Comma-separated stages (ingest,features,labels,recommend,backtest)",
@@ -592,12 +593,13 @@ def run_pipeline(
     ),
 ):
     """Run End-to-End Pipeline."""
-    from .batch_orchestrator.pipeline import PipelineContext, PipelineRunner
-    from datetime import date
     import sys
     import uuid
+    from datetime import date
 
-    def _is_uuid(s: Optional[str]) -> bool:
+    from .batch_orchestrator.pipeline import PipelineContext, PipelineRunner
+
+    def _is_uuid(s: str | None) -> bool:
         if not s:
             return False
         try:
@@ -608,7 +610,7 @@ def run_pipeline(
 
     allowed_stages = set(PipelineRunner.STAGES)
 
-    def _parse_stages(raw: Optional[str]) -> list[str]:
+    def _parse_stages(raw: str | None) -> list[str]:
         if not raw:
             return []
         parsed: list[str] = []
@@ -628,7 +630,7 @@ def run_pipeline(
             parsed.append(st)
         return parsed
 
-    def _parse_symbols(raw_list: Optional[list[str]]) -> Optional[list[str]]:
+    def _parse_symbols(raw_list: list[str] | None) -> list[str] | None:
         if not raw_list:
             return None
         # Typer List[str] can arrive as ['AAPL,PLTR,QQQM'] or ['AAPL','PLTR']

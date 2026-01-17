@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from sqlmodel import create_engine, Session
+
+from sqlmodel import Session, create_engine
+
 from ..config import settings
 
 # Global engine instance

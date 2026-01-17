@@ -1,6 +1,6 @@
-import yaml
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
+import yaml
 
 # NOTE: UI validator must not be stricter than the pipeline loader contract.
 # Pipeline uses StrategyLoader.validate_schema(). We align required fields here.
@@ -27,7 +27,7 @@ RECOMMENDED_ROOT_FIELDS = [
 
 def validate_strategy_yaml_with_warnings(
     content: str,
-) -> Tuple[bool, List[str], List[str]]:
+) -> tuple[bool, list[str], list[str]]:
     """
     Validate YAML syntax and minimal schema requirements.
     Returns (is_valid, error_messages, warning_messages).
@@ -85,13 +85,13 @@ def validate_strategy_yaml_with_warnings(
         return False, [f"Unexpected validation error: {str(e)}"], []
 
 
-def validate_strategy_yaml(content: str) -> Tuple[bool, List[str]]:
+def validate_strategy_yaml(content: str) -> tuple[bool, list[str]]:
     """Legacy API: returns only (is_valid, errors)."""
     ok, errors, _warnings = validate_strategy_yaml_with_warnings(content)
     return ok, errors
 
 
-def extract_strategy_summary(content: str) -> Dict[str, Any]:
+def extract_strategy_summary(content: str) -> dict[str, Any]:
     """Extract key info for display cards (best effort)."""
     try:
         data = yaml.safe_load(content)

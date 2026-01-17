@@ -48,6 +48,11 @@ htmlcov/
 .coverage.*
 .cache
 nosetests.xml
+
+# Streamlit secrets
+.streamlit/secrets.toml
+**/secrets.toml
+**/secret.toml
 coverage.xml
 *.cover
 *.py,cover
@@ -180,4 +185,3 @@ apps/alpha_lab/models/
 # End of https://www.toptal.com/developers/gitignore/api/python
 ml_alpha_lab.db
 
-data/quant.duckdb.backup

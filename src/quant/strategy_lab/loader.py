@@ -1,7 +1,8 @@
-import yaml
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 import logging
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +22,12 @@ class StrategyLoader:
     ]
 
     @staticmethod
-    def load_yaml(file_path: Path) -> Dict[str, Any]:
+    def load_yaml(file_path: Path) -> dict[str, Any]:
         """Load YAML file from path."""
         if not file_path.exists():
             raise FileNotFoundError(f"Strategy file not found: {file_path}")
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             try:
                 config = yaml.safe_load(f)
                 StrategyLoader.validate_schema(config)
@@ -39,7 +40,7 @@ class StrategyLoader:
                 raise
 
     @staticmethod
-    def validate_schema(config: Dict[str, Any]):
+    def validate_schema(config: dict[str, Any]):
         """Basic schema validation for V2."""
         if not config:
             raise ValueError("Empty strategy configuration.")

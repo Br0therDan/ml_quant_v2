@@ -1,21 +1,23 @@
-import sys
 import logging
-from typing import List, Optional
 from datetime import datetime
 
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 from rich.console import Console
-from rich.panel import Panel
 from rich.logging import RichHandler
+from rich.panel import Panel
 
-from quant.services.market_data import MarketDataService
-from quant.services.feature import FeatureService
-from quant.services.ml import MLService
-from quant.services.backtest import BacktestService
-from quant.services.portfolio import PortfolioService
-from quant.db.metastore import MetaStore
+from quant.backtest_engine.engine import BacktestEngine
 from quant.config import settings
+from quant.data_curator.ingest import DataIngester
+from quant.data_curator.provider import AlphaVantageProvider
+from quant.feature_store.features import FeatureCalculator
+from quant.ml.scorer import MLScorer
+from quant.ml.trainer import MLTrainer
+from quant.portfolio_supervisor.engine import PortfolioSupervisor
+from quant.repos.targets import save_targets
+from quant.strategy_lab.loader import StrategyLoader
+from quant.strategy_lab.recommender import Recommender
 
 console = Console()
 log = logging.getLogger(__name__)
@@ -71,12 +73,12 @@ def data_workflow():
             message=f"Start ingestion for {symbols or 'ALL active'}?"
         ).execute():
             with console.status("[bold green]Ingesting data..."):
-                service = MarketDataService()
-                # Assuming MarketDataService has a method to get active symbols if None is passed
-                # But currently CLI logic handles active symbol fetching. Let's do it here.
+                provider = AlphaVantageProvider(api_key=settings.alpha_vantage_api_key)
+                ingester = DataIngester(provider)
+
                 if not symbols:
-                    from quant.repos.symbol import SymbolRepo
                     from quant.db.engine import get_session
+                    from quant.repos.symbol import SymbolRepo
 
                     with get_session() as session:
                         repo = SymbolRepo(session)
@@ -84,11 +86,7 @@ def data_workflow():
 
                 for sym in symbols:
                     console.print(f"Ingesting [bold]{sym}[/bold]...")
-                    service.get_daily_prices(sym)
-
-                # Close connection to release lock
-                if hasattr(service, "series_store"):
-                    service.series_store.close()
+                    ingester.ingest_symbol(sym)
             console.print("[green]Ingestion Complete![/green]")
 
     elif action == "check":
@@ -127,22 +125,27 @@ def ml_workflow():
 
     if action == "features":
         version = inquirer.text(message="Feature Version:", default="v1").execute()
-        winsorize = inquirer.confirm(message="Apply Winsorization (Denoise)?").execute()
-        limits = None
-        if winsorize:
-            limits_str = inquirer.text(
-                message="Winsorize Limits (lower,upper):", default="0.01,0.01"
-            ).execute()
-            limits = [float(x) for x in limits_str.split(",")]
 
         if inquirer.confirm(message="Start computation?").execute():
             with console.status("[bold green]Computing features..."):
-                service = FeatureService()
-                service.compute_all_features(
-                    version=version, winsorize=winsorize, winsorize_limits=limits
-                )
-                if hasattr(service, "series_store"):
-                    service.series_store.close()
+                calc = FeatureCalculator()
+
+                from quant.db.metastore import MetaStore
+
+                with MetaStore().get_session() as session:
+                    from sqlmodel import select
+
+                    from quant.models import Symbol
+
+                    symbols = [
+                        s.symbol
+                        for s in session.exec(
+                            select(Symbol).where(Symbol.is_active)
+                        ).all()
+                    ]
+
+                for sym in symbols:
+                    calc.run_for_symbol(sym, version=version)
             console.print("[green]Done![/green]")
 
     elif action == "train":
@@ -159,29 +162,27 @@ def ml_workflow():
 
         if inquirer.confirm(message="Start training?").execute():
             with console.status(f"[bold green]Training {task}..."):
-                service = MLService()
+                trainer = MLTrainer()
                 # For simplicity, train all active symbols
                 from quant.db.metastore import MetaStore
 
                 with MetaStore().get_session() as session:
-                    from quant.models import Symbol
                     from sqlmodel import select
+
+                    from quant.models import Symbol
 
                     symbols = [
                         s.symbol
                         for s in session.exec(
-                            select(Symbol).where(Symbol.is_active == True)
+                            select(Symbol).where(Symbol.is_active)
                         ).all()
                     ]
 
                 for sym in symbols:
                     if task == "experts":
-                        service.train_experts(sym)
+                        trainer.train_experts(sym)
                     else:
-                        service.train_baseline(sym, feature_selection=feature_selection)
-
-                if hasattr(service, "series_store"):
-                    service.series_store.close()
+                        trainer.train_baseline(sym, feature_selection=feature_selection)
 
             console.print("[green]Training Complete![/green]")
 
@@ -189,29 +190,27 @@ def ml_workflow():
         ensemble = inquirer.confirm(message="Use Expert Ensemble (Gating)?").execute()
         if inquirer.confirm(message="Start scoring?").execute():
             with console.status("[bold green]Scoring..."):
-                service = MLService()
+                scorer = MLScorer()
                 # Get symbols again... (should refactor this)
                 from quant.db.metastore import MetaStore
 
                 with MetaStore().get_session() as session:
-                    from quant.models import Symbol
                     from sqlmodel import select
+
+                    from quant.models import Symbol
 
                     symbols = [
                         s.symbol
                         for s in session.exec(
-                            select(Symbol).where(Symbol.is_active == True)
+                            select(Symbol).where(Symbol.is_active)
                         ).all()
                     ]
 
                 for sym in symbols:
                     if ensemble:
-                        service.score_ensemble(sym)
+                        scorer.score_ensemble(sym)
                     else:
-                        service.score(sym)  # Default latest model
-
-                if hasattr(service, "series_store"):
-                    service.series_store.close()
+                        scorer.score(sym)  # Default latest model
 
             console.print("[green]Scoring Complete![/green]")
 
@@ -230,15 +229,40 @@ def backtest_workflow():
     if action == "back":
         return
 
+    # Strategy Selection
+    strategies_dir = settings.project_root / "strategies"
+    if not strategies_dir.exists():
+        console.print(f"[red]Strategies directory not found: {strategies_dir}[/red]")
+        return
+
+    strategy_files = list(strategies_dir.glob("*.yaml"))
+    if not strategy_files:
+        console.print(f"[red]No YAML strategies found in {strategies_dir}[/red]")
+        return
+
+    strategy_path = inquirer.select(
+        message="Select Strategy:",
+        choices=[Choice(str(f), name=f.name) for f in strategy_files],
+    ).execute()
+
+    config = StrategyLoader.load_yaml(Path(strategy_path))
+
     if action == "recommend":
-        top_k = int(inquirer.text(message="Top K:", default="3").execute())
+        asof = inquirer.text(
+            message="Target Date (YYYY-MM-DD):",
+            default=datetime.now().strftime("%Y-%m-%d"),
+        ).execute()
         if inquirer.confirm(message="Generate recommendations?").execute():
             with console.status("[bold green]Generating..."):
-                service = PortfolioService()
-                df = service.generate_recommendation(top_k=top_k)
-                if hasattr(service, "series_store"):
-                    service.series_store.close()
-            console.print(df)
+                recommender = Recommender()
+                df_raw = recommender.generate_targets(config, asof)
+                if not df_raw.empty:
+                    supervisor = PortfolioSupervisor(config)
+                    df_final = supervisor.audit(df_raw)
+                    save_targets(df_final)
+                    console.print(df_final)
+                else:
+                    console.print("[yellow]No raw recommendations generated.[/yellow]")
 
     elif action == "backtest":
         start = inquirer.text(
@@ -249,10 +273,8 @@ def backtest_workflow():
         ).execute()
         if inquirer.confirm(message="Run Backtest?").execute():
             with console.status("[bold green]Running Simulation..."):
-                service = BacktestService()
-                metrics = service.run_backtest(start_date=start, end_date=end)
-                if hasattr(service, "series_store"):
-                    service.series_store.close()
+                engine = BacktestEngine()
+                metrics = engine.run(config, start, end)
 
             if metrics:
                 console.print(Panel(str(metrics), title="Backtest Result"))

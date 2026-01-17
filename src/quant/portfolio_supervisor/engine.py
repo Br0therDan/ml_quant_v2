@@ -1,7 +1,7 @@
 import logging
+from typing import Any
+
 import pandas as pd
-import json
-from typing import Dict, Any, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ class PortfolioSupervisor:
     Apply R1~R5 risk rules to proposed targets.
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config.get("supervisor", {})
         self.portfolio_config = config.get("portfolio", {})
 

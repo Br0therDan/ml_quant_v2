@@ -1,10 +1,13 @@
 import logging
-import pandas as pd
-import numpy as np
 from datetime import datetime
-from typing import Dict, Any, Optional, List
-from ..db.duck import connect as duck_connect
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from ..config import settings
+from ..db.duck import connect as duck_connect
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +24,14 @@ class BacktestEngine:
     - If no targets at T, 'Hold' policy: keep previous weights.
     """
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path or settings.quant_duckdb_path
 
     def load_ohlcv_returns(
-        self, symbols: List[str], from_date: str, to_date: str
+        self, symbols: list[str], from_date: str, to_date: str
     ) -> pd.DataFrame:
         """Load OHLCV and calculate 1d returns for given symbols and range."""
-        conn = duck_connect(self.db_path)
+        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
         try:
             sym_list = "', '".join(symbols)
             query = f"""
@@ -54,7 +57,7 @@ class BacktestEngine:
         self, strategy_id: str, from_date: str, to_date: str
     ) -> pd.DataFrame:
         """Load approved targets for the strategy in the given range."""
-        conn = duck_connect(self.db_path, read_only=True)
+        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path, read_only=True)
         try:
             query = f"""
                 SELECT study_date as ts, symbol, weight, score
@@ -72,7 +75,7 @@ class BacktestEngine:
         finally:
             conn.close()
 
-    def run(self, strategy_config: Dict[str, Any], from_date: str, to_date: str):
+    def run(self, strategy_config: dict[str, Any], from_date: str, to_date: str):
         """
         Run backtest simulation with Hold Policy.
         """
@@ -113,7 +116,6 @@ class BacktestEngine:
             target_df = df_targets[df_targets["ts"] == t]
 
             # Rebalancing check (T Close)
-            cost = 0.0
             if not target_df.empty:
                 # Update weights based on T targets
                 new_weights = target_df.set_index("symbol")["weight"]
@@ -121,7 +123,7 @@ class BacktestEngine:
 
                 # Rebalance cost: (new - current).abs().sum()
                 turnover = (new_weights - current_weights).abs().sum()
-                cost = turnover * total_cost_bps
+                turnover * total_cost_bps
                 current_weights = new_weights
             else:
                 # [Hold Policy] No targets for T, keep current_weights as set at T-1
@@ -150,7 +152,7 @@ class BacktestEngine:
                 if t in df_returns.index
                 else pd.Series(0.0, index=symbols)
             )
-            day_pnl_raw = (current_weights * day_returns).sum()
+            (current_weights * day_returns).sum()
 
             # 2. Rebalance at T Close (affects T+1)
             target_df = df_targets[df_targets["ts"] == t]
@@ -170,7 +172,7 @@ class BacktestEngine:
 
             # For simplicity in Ledger: sum(contribution) = day_pnl
             # Let's attribute day_pnl_raw to the active symbols.
-            active_at_start = current_weights.index[
+            current_weights.index[
                 current_weights > 0
             ]  # This is not right if we rebalanced.
 
@@ -258,7 +260,7 @@ class BacktestEngine:
         self,
         strategy_id: str,
         version: str,
-        ledger: List[Dict],
+        ledger: list[dict],
         from_ts: str,
         to_ts: str,
         fee_bps: float,
@@ -267,7 +269,10 @@ class BacktestEngine:
         if not ledger:
             return None
         df_ledger = pd.DataFrame(ledger)
+        # ensure ts is datetime and contributions are numeric to avoid type errors
+        df_ledger["ts"] = pd.to_datetime(df_ledger["ts"])
         daily_pnl = df_ledger.groupby("ts")["contribution"].sum()
+        daily_pnl = pd.to_numeric(daily_pnl, errors="coerce").fillna(0.0)
 
         n_days = len(daily_pnl)
         mean_ret = daily_pnl.mean()
@@ -275,9 +280,12 @@ class BacktestEngine:
         annual_factor = 252.0
 
         # CAGR
-        cum_ret = (1 + daily_pnl).prod() - 1
+        cum_ret = (1.0 + daily_pnl).prod() - 1.0 # type: ignore
+        # ensure index is datetime for span calculation
+        if not pd.api.types.is_datetime64_any_dtype(daily_pnl.index):
+            daily_pnl.index = pd.to_datetime(daily_pnl.index)
         span = (daily_pnl.index[-1] - daily_pnl.index[0]).days + 1
-        cagr = (1 + cum_ret) ** (365.0 / span) - 1 if span > 0 else 0.0
+        cagr = (1.0 + cum_ret) ** (365.0 / span) - 1.0 if span > 0 else 0.0
 
         # [P5 Refinement] Sharpe Safety
         if n_days < 2 or std_ret == 0 or np.isnan(std_ret):
@@ -288,7 +296,7 @@ class BacktestEngine:
         mdd = ((1 + daily_pnl).cumprod() / (1 + daily_pnl).cumprod().cummax() - 1).min()
 
         run_id = f"bt_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        conn = duck_connect(self.db_path)
+        conn = duck_connect(Path(self.db_path) if isinstance(self.db_path, str) else self.db_path)
         try:
             conn.execute(
                 f"""

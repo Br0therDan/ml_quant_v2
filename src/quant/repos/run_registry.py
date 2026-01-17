@@ -1,18 +1,18 @@
-import uuid
 import json
+import uuid
 from datetime import datetime
-from typing import Optional, Any
-from sqlmodel import Session
-from ..models.meta import Run
+from typing import Any
+
 from ..db.engine import get_session
+from ..models.meta import Run
 
 
 class RunRegistry:
     @staticmethod
     def run_start(
         kind: str,
-        config: Optional[dict[str, Any]] = None,
-        run_id: Optional[str] = None,
+        config: dict[str, Any] | None = None,
+        run_id: str | None = None,
     ) -> str:
         """Create a new run record in the SQLite meta database."""
         run_id = run_id or str(uuid.uuid4())

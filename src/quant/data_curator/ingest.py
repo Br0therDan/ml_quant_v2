@@ -1,22 +1,23 @@
 import logging
-import pandas as pd
 from datetime import datetime
-from typing import List, Optional
+
+import pandas as pd
+
+from ..config import settings
 from ..db.duck import connect as duck_connect
 from .provider import AlphaVantageProvider
-from .quality_gate import QualityGate, DataQualityError
-from ..config import settings
+from .quality_gate import QualityGate
 
 logger = logging.getLogger(__name__)
 
 
 class DataIngester:
-    def __init__(self, provider: AlphaVantageProvider, db_path: Optional[str] = None):
+    def __init__(self, provider: AlphaVantageProvider, db_path: str | None = None):
         self.provider = provider
         self.db_path = db_path or settings.quant_duckdb_path
         self.gate = QualityGate()
 
-    def get_latest_ts(self, symbol: str) -> Optional[datetime]:
+    def get_latest_ts(self, symbol: str) -> datetime | None:
         """Get the latest timestamp for a symbol from DuckDB."""
         conn = duck_connect(self.db_path)
         try:
@@ -46,6 +47,17 @@ class DataIngester:
 
         # 1. Fetch
         df = self.provider.get_daily_ohlcv(symbol, outputsize=outputsize)
+
+        # 1.5. Apply Adjustments (Handle splits/dividends)
+        if not df.empty and "adjusted_close" in df.columns:
+            logger.info(f"Applying adjustments for {symbol}")
+            # Standard back-adjustment: adj_factor = adj_close / close
+            # We avoid division by zero just in case
+            adj_factor = df["adjusted_close"] / df["close"].replace(0, 1)
+            df["open"] = df["open"] * adj_factor
+            df["high"] = df["high"] * adj_factor
+            df["low"] = df["low"] * adj_factor
+            df["close"] = df["close"] * adj_factor  # This should match adjusted_close
 
         # 2. Validate
         self.gate.validate_ohlcv(df, symbol)
@@ -83,9 +95,9 @@ class DataIngester:
             ]
             df = df[cols]
             # Ensure ts is a date string for DuckDB CSV parser or direct load
-            df["ts"] = df["ts"].dt.strftime("%Y-%m-%d")
+            df["ts"] = pd.to_datetime(df["ts"]).dt.strftime("%Y-%m-%d")
             # Ensure ingested_at is a string
-            df["ingested_at"] = df["ingested_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+            df["ingested_at"] = pd.to_datetime(df["ingested_at"]).dt.strftime("%Y-%m-%d %H:%M:%S")
 
             # Use a more robust way: Delete matching and Insert
             # We use the pandas dataframe 'df' as a source
@@ -109,7 +121,31 @@ class DataIngester:
         finally:
             conn.close()
 
-    def ingest_all(self, symbols: List[str]):
+    def ingest_overview(self, symbol: str):
+        """Fetch and save company overview to SQLite."""
+        from ..db.metastore import MetaStore
+        from ..models.market import CompanyOverview
+
+        logger.info(f"Fetching overview for {symbol}")
+        data = self.provider.get_overview(symbol)
+        if not data:
+            logger.warning(f"No overview data for {symbol}")
+            return
+
+        if not data.get("symbol"):
+            data["symbol"] = symbol
+
+        store = MetaStore()
+        try:
+            with store.get_session() as session:
+                overview = CompanyOverview(**data)
+                session.merge(overview)
+                session.commit()
+            logger.info(f"Saved overview for {symbol}")
+        except Exception as e:
+            logger.error(f"Failed to save overview for {symbol}: {e}")
+
+    def ingest_all(self, symbols: list[str]):
         """Ingest multiple symbols."""
         for sym in symbols:
             try:

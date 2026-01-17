@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import uuid
+import time
 from datetime import datetime, timedelta
 from app.ui.data_access import (
     load_active_symbols,
@@ -9,6 +11,9 @@ from app.ui.data_access import (
 from app.ui.charts import plot_market_explorer_chart
 from app.ui.navigation import run_center_cta
 from app.ui.run_artifacts import list_runs_from_run_json
+from app.ui.execution import ExecutionManager
+from src.quant.data_curator.provider import AlphaVantageProvider
+from src.quant.config import settings
 
 st.set_page_config(
     page_title="Data Center | Quant Lab V2",
@@ -18,46 +23,144 @@ st.set_page_config(
 
 st.title("💾 Data Center")
 
-st.caption(
-    "이 페이지는 read-only 모니터링입니다. 심볼 등록/인제스트 실행은 Run Center(단일 실행 진입점)에서만 수행합니다."
-)
+st.caption("Symbol 등록, 데이터 수집(Ingest) 및 상태 모니터링을 위한 공간입니다.")
 
 # --- Layout: 2-Panel ---
-col_controls, col_results = st.columns([0.28, 0.72], gap="small")
+col_controls, col_results = st.columns([0.3, 0.7], gap="small")
 
 with col_controls:
     with st.container(border=True, height="stretch"):
         st.subheader("Controls")
 
-        run_center_cta(
-            title="실행은 Run Center에서만 가능합니다.",
-            body="Data Center는 심볼 등록/인제스트 상태를 관측하는 read-only 페이지입니다.",
-        )
-
-        with st.expander("How to register a symbol? (GUI)", expanded=False):
-            st.markdown(
-                "GUI에서는 `symbol-register`를 직접 실행하지 않습니다. 대신 아래 CLI를 사용하세요."
+        # 1. Symbol Search & Registration
+        with st.expander("🔍 Symbol Search & Registration", expanded=True):
+            search_query = st.text_input(
+                "Search Symbol (Alpha Vantage)", placeholder="e.g. NVDA, AAPL"
             )
-            st.code(
-                "\n".join(
-                    [
-                        "# Register only",
-                        "uv run quant symbol-register AAPL",
-                        "",
-                        "# Register + immediate ingest (optional)",
-                        "uv run quant symbol-register AAPL --ingest",
+            if st.button("Search", width="stretch") or search_query:
+                if search_query:
+                    try:
+                        provider = AlphaVantageProvider(
+                            api_key=settings.alpha_vantage_api_key
+                        )
+                        results_df = provider.search_symbols(search_query)
+                        if not results_df.empty:
+                            st.session_state["search_results"] = results_df
+                        else:
+                            st.warning("No results found.")
+                            st.session_state["search_results"] = None
+                    except Exception as e:
+                        st.error(f"Search failed: {e}")
+
+            if st.session_state.get("search_results") is not None:
+                res = st.session_state["search_results"]
+                # Use a selection mechanism
+                # Streamlit dataframe with selection is only in newer versions,
+                # using a multiselect for simplicity or manual checkboxes is safer.
+                # Let's use a simplified view + multiselect.
+
+                options = [
+                    f"{row['symbol']} | {row['name']} ({row['currency']})"
+                    for _, row in res.iterrows()
+                ]
+                selected_options = st.multiselect("Select symbols to add", options)
+
+                selected_symbols = [opt.split(" | ")[0] for opt in selected_options]
+
+                col_reg, col_reg_ing = st.columns(2)
+                with col_reg:
+                    if st.button(
+                        "Register Only", disabled=not selected_symbols, width="stretch"
+                    ):
+                        run_id = f"reg_{datetime.now().strftime('%H%M%S')}"
+                        cmd = [
+                            "uv",
+                            "run",
+                            "quant",
+                            "symbol-register",
+                        ] + selected_symbols
+                        success = ExecutionManager.run_command_async(cmd, run_id)
+                        if success:
+                            st.success(
+                                f"Started registration for {', '.join(selected_symbols)}"
+                            )
+                            time.sleep(1)
+                            st.rerun()
+
+                with col_reg_ing:
+                    if st.button(
+                        "Register & Ingest",
+                        disabled=not selected_symbols,
+                        width="stretch",
+                        type="primary",
+                    ):
+                        run_id = f"reg_ing_{datetime.now().strftime('%H%M%S')}"
+                        cmd = (
+                            ["uv", "run", "quant", "symbol-register"]
+                            + selected_symbols
+                            + ["--ingest"]
+                        )
+                        success = ExecutionManager.run_command_async(cmd, run_id)
+                        if success:
+                            st.success(
+                                f"Started registration & ingest for {', '.join(selected_symbols)}"
+                            )
+                            time.sleep(1)
+                            st.rerun()
+
+        st.markdown("---")
+
+        # 2. Bulk Ingest for Registered Symbols
+        with st.expander("⏱️ Bulk Ingest", expanded=False):
+            active_symbols = load_active_symbols()
+            if active_symbols:
+                all_syms = [s.symbol for s in active_symbols]
+                to_ingest = st.multiselect(
+                    "Select registered symbols to ingest", all_syms
+                )
+                if st.button(
+                    "Run Ingest",
+                    disabled=not to_ingest,
+                    width="stretch",
+                    type="primary",
+                ):
+                    # We can use 'quant pipeline run --stages ingest --symbols ...'
+                    run_id = f"ingest_{datetime.now().strftime('%H%M%S')}"
+                    # Individual ingest or pipeline ingest?
+                    # Pipeline ingest is better for multi-symbol
+                    today_str = datetime.today().strftime("%Y-%m-%d")
+                    start_str = (datetime.today() - timedelta(days=365)).strftime(
+                        "%Y-%m-%d"
+                    )
+                    cmd = [
+                        "uv",
+                        "run",
+                        "quant",
+                        "pipeline",
+                        "run",
+                        "--from",
+                        start_str,
+                        "--to",
+                        today_str,
+                        "--stages",
+                        "ingest",
+                        "--symbols",
+                        ",".join(to_ingest),
+                        "--run-id",
+                        str(uuid.uuid4()),
                     ]
-                ),
-                language="bash",
-            )
-            st.caption(
-                "등록 후, 인제스트/피처/라벨/추천/백테스트 실행은 Run Center에서 수행합니다."
-            )
+                    success = ExecutionManager.run_command_async(cmd, run_id)
+                    if success:
+                        st.success("Ingest pipeline started.")
+            else:
+                st.info("No active symbols found.")
 
-        # Symbol Selector (Market Explorer)
+        st.markdown("---")
+
+        # 3. Market Explorer (Symbol Selector)
         active_symbols = load_active_symbols()
         selected_symbol = st.selectbox(
-            "Symbol",
+            "Symbol (Market Explorer)",
             [s.symbol for s in active_symbols] if active_symbols else ["AAPL"],
             key="selected_symbol",
         )
@@ -85,12 +188,24 @@ with col_controls:
         vol_overlay = st.checkbox("Volume Overlay", value=True)
 
         st.markdown("---")
-        st.caption("실행(등록/수집/피처 계산)은 Run Center에서 수행합니다.")
+        # st.caption("실행(등록/수집/피처 계산)은 Run Center에서 수행합니다.")
+
+        # Display feedback for recent actions
+        if "data_center_msg" in st.session_state:
+            st.info(st.session_state["data_center_msg"])
+            if st.button("Clear Message"):
+                del st.session_state["data_center_msg"]
+                st.rerun()
 
 
 with col_results:
     with st.container(border=True, height=800):
-        st.subheader("Symbol Inventory")
+        c1, c2 = st.columns([0.8, 0.2])
+        with c1:
+            st.subheader("Symbol Inventory")
+        with c2:
+            if st.button("🔄 Refresh Data", width="stretch"):
+                st.rerun()
 
         inventory_df = load_symbol_inventory()
 
@@ -195,7 +310,9 @@ with col_results:
                 if fig is not None:
                     st.plotly_chart(fig, width="stretch")
                 else:
-                    st.warning("Failed to generate chart for the selected symbol/date range.")
+                    st.warning(
+                        "Failed to generate chart for the selected symbol/date range."
+                    )
 
                 tab_summary, tab_quality, tab_raw = st.tabs(
                     ["Summary", "Quality Gate", "Raw Data"]

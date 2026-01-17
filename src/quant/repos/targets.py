@@ -1,9 +1,11 @@
-import pandas as pd
-import logging
 import json
+import logging
 from datetime import datetime
-from ..db.duck import connect as duck_connect
+
+import pandas as pd
+
 from ..config import settings
+from ..db.duck import connect as duck_connect
 
 log = logging.getLogger(__name__)
 

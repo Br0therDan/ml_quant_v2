@@ -1,9 +1,10 @@
+import contextlib
 import os
 from datetime import datetime
+from pathlib import Path
 
 import duckdb
 import pandas as pd
-from typing import Optional
 
 from quant.config import settings
 
@@ -12,8 +13,8 @@ DB_PATH = settings.quant_duckdb_path
 
 
 class SeriesStore:
-    def __init__(self, db_path: str = DB_PATH, read_only: bool = False):
-        self.db_path = db_path
+    def __init__(self, db_path: str | Path = DB_PATH, read_only: bool = False):
+        self.db_path = str(db_path)
         self.read_only = read_only
         self._table_columns_cache: dict[str, set[str]] = {}
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
@@ -44,10 +45,8 @@ class SeriesStore:
 
     def close(self):
         """Close the DuckDB connection."""
-        try:
+        with contextlib.suppress(Exception):
             self.conn.close()
-        except Exception:
-            pass
 
     def __enter__(self):
         return self
@@ -513,7 +512,7 @@ class SeriesStore:
 
         # Ensure correct column order
         cols = ["symbol", "date", "model_id", "task_id", "score", "generated_at"]
-        df_final = df_save[cols]
+        df_save[cols]
 
         try:
             self.conn.execute(
@@ -531,7 +530,7 @@ class SeriesStore:
             )
 
     def get_predictions(
-        self, symbol: str, model_id: Optional[str] = None
+        self, symbol: str, model_id: str | None = None
     ) -> pd.DataFrame:
         """Returns predictions for a symbol."""
         query = f"SELECT * FROM predictions WHERE symbol = '{symbol}'"
@@ -554,7 +553,7 @@ class SeriesStore:
 
         # Ensure correct column order
         cols = ["date", "symbol", "weight", "score", "model_id", "decision_at"]
-        df_final = df_save[cols]
+        df_save[cols]
 
         try:
             self.conn.execute(
@@ -573,7 +572,7 @@ class SeriesStore:
             """
             )
 
-    def get_portfolio_decisions(self, date_str: Optional[str] = None) -> pd.DataFrame:
+    def get_portfolio_decisions(self, date_str: str | None = None) -> pd.DataFrame:
         """Returns portfolio decisions, optionally filtered by date."""
         query = "SELECT * FROM portfolio_decisions"
         if date_str:
@@ -621,7 +620,7 @@ class SeriesStore:
             return
 
         cols = ["run_id", "date", "symbol", "action", "price", "weight"]
-        df_final = df[cols]
+        df[cols]
 
         try:
             self.conn.execute(
@@ -645,7 +644,7 @@ class SeriesStore:
             return
 
         cols = ["run_id", "date", "equity", "daily_return"]
-        df_final = df[cols]
+        df[cols]
 
         try:
             self.conn.execute(

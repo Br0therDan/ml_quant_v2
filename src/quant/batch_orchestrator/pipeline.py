@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-import logging
+import contextlib
+import hashlib
 import json
+import logging
+import re
+import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Callable, Dict, Any
-import uuid
-import re
-import hashlib
-
+from typing import Any
 
 from ..config import settings
-from ..repos.run_registry import RunRegistry
 from ..db.engine import get_session
+from ..repos.run_registry import RunRegistry
 
 log = logging.getLogger(__name__)
 
@@ -25,36 +26,36 @@ class PipelineContext:
     strategy_path: Path
     from_date: str
     to_date: str
-    symbols: List[str]
+    symbols: list[str]
     dry_run: bool = False
     fail_fast: bool = True
-    active_stages: List[str] = field(default_factory=list)
+    active_stages: list[str] = field(default_factory=list)
 
     # Optional override to align artifacts + run registry IDs
-    requested_run_id: Optional[str] = None
+    requested_run_id: str | None = None
 
     # Optional human-friendly run slug override (does not affect run_id)
-    requested_run_slug: Optional[str] = None
+    requested_run_slug: str | None = None
 
     # For audit/replay
-    invoked_command: Optional[str] = None
+    invoked_command: str | None = None
 
     # Optional link to the dry-run plan artifacts (UI contract)
-    plan_run_id: Optional[str] = None
-    plan_artifacts_dir: Optional[str] = None
+    plan_run_id: str | None = None
+    plan_artifacts_dir: str | None = None
 
     # Runtime state
-    pipeline_run_id: Optional[str] = None
-    artifacts_dir: Optional[Path] = None
-    run_slug: Optional[str] = None
-    display_name: Optional[str] = None
-    pipeline_started_at: Optional[str] = None
-    pipeline_ended_at: Optional[str] = None
-    pipeline_status: Optional[str] = None
-    exit_code: Optional[int] = None
-    strategy_id: Optional[str] = None
-    strategy_version: Optional[str] = None
-    stage_meta: Dict[str, Any] = field(default_factory=dict)
+    pipeline_run_id: str | None = None
+    artifacts_dir: Path | None = None
+    run_slug: str | None = None
+    display_name: str | None = None
+    pipeline_started_at: str | None = None
+    pipeline_ended_at: str | None = None
+    pipeline_status: str | None = None
+    exit_code: int | None = None
+    strategy_id: str | None = None
+    strategy_version: str | None = None
+    stage_meta: dict[str, Any] = field(default_factory=dict)
     duckdb_path: str = str(settings.quant_duckdb_path)
     sqlite_path: str = str(settings.quant_sqlite_path)
 
@@ -66,12 +67,12 @@ class StageResult:
     stage_name: str
     status: str  # "success" or "fail"
     duration_sec: float
-    stage_exec_id: Optional[str] = None
-    error_text: Optional[str] = None
-    meta: Dict[str, Any] = field(default_factory=dict)
+    stage_exec_id: str | None = None
+    error_text: str | None = None
+    meta: dict[str, Any] = field(default_factory=dict)
 
 
-def _is_uuid(s: Optional[str]) -> bool:
+def _is_uuid(s: str | None) -> bool:
     if not s:
         return False
     try:
@@ -150,7 +151,6 @@ def _make_run_slug(
         syms = sorted(set(syms))
         h = hashlib.sha1(",".join(syms).encode("utf-8")).hexdigest()[:8]
         uni_part2 = f"u{h}"
-        uni_disp2 = uni_disp
 
     # cap strategy part
     keep = max(
@@ -162,7 +162,7 @@ def _make_run_slug(
 
 
 def _write_progress_json(
-    artifacts_dir: Optional[Path], payload: dict[str, Any]
+    artifacts_dir: Path | None, payload: dict[str, Any]
 ) -> None:
     """Append machine-readable progress to pipeline.log without polluting stdout."""
     if artifacts_dir is None:
@@ -186,8 +186,8 @@ class PipelineRunner:
 
     def __init__(self, ctx: PipelineContext):
         self.ctx = ctx
-        self.results: List[StageResult] = []
-        self._file_handler: Optional[logging.Handler] = None
+        self.results: list[StageResult] = []
+        self._file_handler: logging.Handler | None = None
 
     def _attach_file_logger(self, log_path: Path) -> None:
         """Attach a FileHandler for this pipeline run (best-effort)."""
@@ -299,9 +299,9 @@ class PipelineRunner:
     def build_plan(
         self,
         invoked_command: str,
-        stages_requested: Optional[str],
-        symbols_override_raw: Optional[list[str]],
-        run_id_override: Optional[str] = None,
+        stages_requested: str | None,
+        symbols_override_raw: list[str] | None,
+        run_id_override: str | None = None,
     ) -> dict[str, Any]:
         """Build a structured execution plan without running stages."""
         plan_run_id = (
@@ -316,7 +316,7 @@ class PipelineRunner:
         # Strategy parse
         strategy_id = None
         strategy_version = None
-        strategy_config: Optional[dict[str, Any]] = None
+        strategy_config: dict[str, Any] | None = None
         try:
             from ..strategy_lab.loader import StrategyLoader
 
@@ -336,7 +336,7 @@ class PipelineRunner:
         if symbols_override_raw:
             # raw list can contain comma-separated segments
             joined = ",".join([s for s in symbols_override_raw if s is not None])
-            symbols_override = self._normalize_symbols([p for p in joined.split(",")])
+            symbols_override = self._normalize_symbols(list(joined.split(",")))
 
         symbols_source = "strategy"
         symbols_resolved: list[str] = []
@@ -577,13 +577,11 @@ class PipelineRunner:
 
             # Best-effort file log + run metadata snapshot
             self._attach_file_logger(self.ctx.artifacts_dir / "pipeline.log")
-            try:
+            with contextlib.suppress(Exception):
                 (self.ctx.artifacts_dir / "config.json").write_text(
                     json.dumps(config, ensure_ascii=False, indent=2) + "\n",
                     encoding="utf-8",
                 )
-            except Exception:
-                pass
 
         success = True
         try:
@@ -636,7 +634,7 @@ class PipelineRunner:
         log.info(f"[{stage_name.upper()}] Starting...")
         start_ts = datetime.utcnow()
 
-        stage_dir: Optional[Path] = None
+        stage_dir: Path | None = None
         if self.ctx.artifacts_dir is not None:
             try:
                 stage_dir = self.ctx.artifacts_dir / "stages" / stage_name
@@ -683,7 +681,7 @@ class PipelineRunner:
             self.results.append(result)
 
             if stage_dir is not None:
-                try:
+                with contextlib.suppress(Exception):
                     (stage_dir / "result.json").write_text(
                         json.dumps(
                             {
@@ -707,8 +705,6 @@ class PipelineRunner:
                         + "\n",
                         encoding="utf-8",
                     )
-                except Exception:
-                    pass
 
             status_icon = "✅" if result.status == "success" else "❌"
             log.info(
@@ -735,8 +731,8 @@ class PipelineRunner:
 
 
 def run_ingest(ctx: PipelineContext) -> str:
-    from ..data_curator.provider import AlphaVantageProvider
     from ..data_curator.ingest import DataIngester
+    from ..data_curator.provider import AlphaVantageProvider
 
     # Configuration with parent run context
     config = {
@@ -824,13 +820,10 @@ def run_labels(ctx: PipelineContext) -> str:
 
 
 def run_recommend(ctx: PipelineContext) -> str:
-    from ..strategy_lab.loader import StrategyLoader
-    from ..strategy_lab.recommender import Recommender
-    from ..portfolio_supervisor.engine import PortfolioSupervisor
-    from ..repos.targets import save_targets
-    import pandas as pd
-    import sys
     import os
+    import sys
+
+    import pandas as pd
     from rich.console import Console
     from rich.progress import (
         BarColumn,
@@ -839,6 +832,11 @@ def run_recommend(ctx: PipelineContext) -> str:
         TimeElapsedColumn,
         TimeRemainingColumn,
     )
+
+    from ..portfolio_supervisor.engine import PortfolioSupervisor
+    from ..repos.targets import save_targets
+    from ..strategy_lab.loader import StrategyLoader
+    from ..strategy_lab.recommender import Recommender
 
     # We are using 'to_date' as 'asof' date for recommendation?
     # Usually recommendation is done for a specific date (today or end of period).
@@ -1084,8 +1082,8 @@ def run_recommend(ctx: PipelineContext) -> str:
 
 
 def run_backtest(ctx: PipelineContext) -> str:
-    from ..strategy_lab.loader import StrategyLoader
     from ..backtest_engine.engine import BacktestEngine
+    from ..strategy_lab.loader import StrategyLoader
 
     config_run = {
         "strategy": str(ctx.strategy_path),
@@ -1108,7 +1106,7 @@ def run_backtest(ctx: PipelineContext) -> str:
                 "date_to": ctx.to_date,
                 "has_metrics": bool(metrics),
                 "metrics_keys": (
-                    sorted(list(metrics.keys())) if isinstance(metrics, dict) else []
+                    sorted(metrics.keys()) if isinstance(metrics, dict) else []
                 ),
             }
         except Exception:

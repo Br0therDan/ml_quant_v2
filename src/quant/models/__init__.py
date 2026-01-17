@@ -1,5 +1,5 @@
-from .meta import Symbol, Experiment, Model, Run
 from .market import CompanyOverview, EconomicIndicator, NewsArticle
+from .meta import Experiment, Model, Run, Symbol
 
 __all__ = [
     "Symbol",

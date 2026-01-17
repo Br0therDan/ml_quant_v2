@@ -32,9 +32,7 @@ st.set_page_config(
 )
 
 st.title("▶️ Run Center")
-st.caption(
-    "이 페이지는 Quant Lab V2에서 유일한 실행 진입점입니다. (Dashboard/Data/Feature/Strategy/Backtest는 read-only)"
-)
+st.caption("이 페이지는 파이프라인(Batch/End-to-End) 오케스트레이션을 담당합니다.")
 
 # --- Layout ---
 col_controls, col_results = st.columns([0.3, 0.7], gap="small")
@@ -574,7 +572,6 @@ with col_results:
             else:
                 st.caption("No alias index entries found.")
 
-  
             st.markdown(
                 "**2) Runs scanned from run.json** (`artifacts/runs/*/run.json`)"
             )
