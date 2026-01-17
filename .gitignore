@@ -181,4 +181,3 @@ apps/alpha_lab/models/
 ml_alpha_lab.db
 
 data/quant.duckdb.backup
-data/quant.duckdb
