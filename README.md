@@ -2,7 +2,7 @@
 
 > **버전:** v2.0.0  
 > **최초 작성일:** 2026-01-16  
-> **최종 수정일:** 2026-01-16
+> **최종 수정일:** 2026-01-17
 
 **데이터 수집부터 AI 기반 예측, 전략 백테스팅까지 — 모듈 기반의 재현 가능한 퀀트 투자 실험 플랫폼**
 
@@ -526,14 +526,6 @@ ml_quant/
 │   │   ├── splits.py               # 시계열 Train/Test 분할
 │   │   └── experts.py              # 시장 국면(Bull/Bear) 탐지
 │   │
-│   ├── 📁 services/                # 레거시 서비스 (일부 호환)
-│   │   ├── market_data.py          # 데이터 수집 서비스
-│   │   ├── feature.py              # 피처 서비스
-│   │   ├── label.py                # 레이블 서비스
-│   │   ├── ml.py                   # ML 서비스
-│   │   ├── portfolio.py            # 포트폴리오 서비스
-│   │   └── backtest.py             # 백테스트 서비스
-│   │
 │   └── 📁 ui/                      # Streamlit 공통 유틸
 │       ├── data_access.py          # DB 조회 함수
 │       └── charts.py               # 차트 생성 유틸
@@ -743,7 +735,7 @@ WHERE strategy_id = 'momentum_v1' AND asof = '2025-12-31';
 **역할**: 전체 파이프라인을 단일 커맨드로 실행
 
 ```bash
-quant pipeline run \
+uv run quant pipeline run \
   --strategy strategies/momentum_v1.yaml \
   --from 2024-01-01 \
   --to 2025-12-31
@@ -768,31 +760,31 @@ quant pipeline run \
 
 ```bash
 # DB 초기화
-quant init-db
+uv run quant init-db
 
 # 데이터 수집
-quant ingest --symbols AAPL MSFT
+uv run quant ingest --symbols AAPL MSFT
 
 # 피처 생성
-quant features --feature-version v1
+uv run quant features --feature-version v1
 
 # 레이블 생성
-quant labels --label-version v1 --horizon 60
+uv run quant labels --label-version v1 --horizon 60
 
 # 전략 추천
-quant recommend --strategy strategies/momentum_v1.yaml --asof 2025-12-31
+uv run quant recommend --strategy strategies/momentum_v1.yaml --asof 2025-12-31
 
 # 백테스트
-quant backtest --strategy strategies/momentum_v1.yaml --from 2024-01-01 --to 2025-12-31
+uv run quant backtest --strategy strategies/momentum_v1.yaml --from 2024-01-01 --to 2025-12-31
 
 # 파이프라인 실행 (End-to-End)
-quant pipeline run --strategy strategies/momentum_v1.yaml --from 2024-01-01 --to 2025-12-31
+uv run quant pipeline run --strategy strategies/momentum_v1.yaml --from 2024-01-01 --to 2025-12-31
 ```
 
 #### 2. Interactive TUI (Terminal UI)
 
 ```bash
-quant  # 또는 quant ui
+uv run quant  # 또는 uv run quant ui
 ```
 
 **제공 기능:**
@@ -1234,5 +1226,5 @@ MIT License (상업적 사용 가능)
 
 ---
 
-**마지막 업데이트:** 2026-01-16  
+**마지막 업데이트:** 2026-01-17  
 **문서 버전:** v2.0.0

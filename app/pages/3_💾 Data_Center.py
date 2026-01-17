@@ -114,8 +114,6 @@ with col_controls:
                             time.sleep(1)
                             st.rerun()
 
-        st.markdown("---")
-
         # 2. Bulk Ingest for Registered Symbols
         with st.expander("⏱️ Bulk Ingest", expanded=False):
             active_symbols = load_active_symbols()
@@ -161,8 +159,6 @@ with col_controls:
             else:
                 st.info("No active symbols found.")
 
-        st.markdown("---")
-
         # 3. Market Explorer (Symbol Selector)
         active_symbols = load_active_symbols()
         selected_symbol = st.selectbox(
@@ -188,12 +184,9 @@ with col_controls:
             start_date = datetime(2020, 1, 1)
 
         # Chart Settings
-        st.markdown("---")
         chart_type = st.radio("Chart Type", ["Candlestick", "Line"], horizontal=True)
         log_scale = st.checkbox("Log Scale")
         vol_overlay = st.checkbox("Volume Overlay", value=True)
-
-        st.markdown("---")
         # st.caption("실행(등록/수집/피처 계산)은 Run Center에서 수행합니다.")
 
         # Display feedback for recent actions
@@ -220,7 +213,7 @@ with col_results:
         )
 
         with tab_registry:
-            st.subheader("Symbol Registration Status")
+            # st.subheader("Symbol Registration Status")
 
             if inventory_df.empty:
                 st.info(
@@ -243,10 +236,7 @@ with col_results:
                 )
 
         with tab_ingest:
-            st.subheader("Ingestion Monitoring (read-only)")
-            st.caption(
-                "인제스트 상태는 (1) DuckDB 커버리지, (2) 최근 pipeline run.json(artifacts) 요약으로 관측합니다."
-            )
+            st.subheader("Ingestion Monitoring (read-only)", help="인제스트 상태는 (1) DuckDB 커버리지, (2) 최근 pipeline run.json(artifacts) 요약으로 관측합니다.")
 
             if inventory_df.empty:
                 st.info("표시할 심볼 인벤토리가 없습니다.")
@@ -263,7 +253,6 @@ with col_results:
                 )
                 st.dataframe(cov, hide_index=True, width="stretch")
 
-            st.markdown("---")
             st.markdown("**2) Recent pipeline runs (artifacts/runs/*/run.json)**")
             runs = list_runs_from_run_json()
             ingest_rows: list[dict] = []
@@ -294,8 +283,6 @@ with col_results:
                 st.caption("No ingest stage results found in recent run.json files.")
 
         with tab_market:
-            st.subheader(f"Price History: {symbol}")
-
             from_str = start_date.strftime("%Y-%m-%d")
             to_str = today.strftime("%Y-%m-%d")
             df_ohlcv = load_ohlcv(symbol, from_str, to_str)
@@ -306,38 +293,40 @@ with col_results:
                 )
                 st.info("Chart will be displayed once data is ingested.")
             else:
-                fig = plot_market_explorer_chart(
-                    df_ohlcv,
-                    chart_type=chart_type,
-                    log_scale=log_scale,
-                    vol_overlay=vol_overlay,
-                    sma_list=[20, 60],
-                )
-                if fig is not None:
-                    st.plotly_chart(fig, width="stretch")
-                else:
-                    st.warning(
-                        "Failed to generate chart for the selected symbol/date range."
+                with st.container(border=True):
+                    st.markdown(f"**Price Chart**: {symbol} from {from_str} to {to_str}")
+                    fig = plot_market_explorer_chart(
+                        df_ohlcv,
+                        chart_type=chart_type,
+                        log_scale=log_scale,
+                        vol_overlay=vol_overlay,
+                        sma_list=[20, 60],
                     )
-
-                tab_summary, tab_quality, tab_raw = st.tabs(
-                    ["Summary", "Quality Gate", "Raw Data"]
-                )
-
-                with tab_summary:
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Rows", len(df_ohlcv))
-                    c2.metric("Start Date", df_ohlcv["ts"].min().strftime("%Y-%m-%d"))
-                    c3.metric("End Date", df_ohlcv["ts"].max().strftime("%Y-%m-%d"))
-
-                with tab_quality:
-                    n_na = df_ohlcv.isna().sum().sum()
-                    n_dups = df_ohlcv.duplicated().sum()
-                    st.write(f"- Total Missing Values: {n_na}")
-                    st.write(f"- Duplicate Rows: {n_dups}")
-
-                with tab_raw:
-                    st.dataframe(
-                        df_ohlcv.sort_values("ts", ascending=False),
-                        width="stretch",
+                    if fig is not None:
+                        st.plotly_chart(fig, width="stretch", height=400)
+                    else:
+                        st.warning(
+                            "Failed to generate chart for the selected symbol/date range."
+                        )
+    
+                with st.container(border=True):
+                    tab_summary, tab_quality, tab_raw = st.tabs(
+                        ["Summary", "Quality Gate", "Raw Data"]
                     )
+                    with tab_summary:
+                        c1, c2, c3 = st.columns(3)
+                        c1.metric("Rows", len(df_ohlcv))
+                        c2.metric("Start Date", df_ohlcv["ts"].min().strftime("%Y-%m-%d"))
+                        c3.metric("End Date", df_ohlcv["ts"].max().strftime("%Y-%m-%d"))
+
+                    with tab_quality:
+                        n_na = df_ohlcv.isna().sum().sum()
+                        n_dups = df_ohlcv.duplicated().sum()
+                        st.write(f"- Total Missing Values: {n_na}")
+                        st.write(f"- Duplicate Rows: {n_dups}")
+
+                    with tab_raw:
+                        st.dataframe(
+                            df_ohlcv.sort_values("ts", ascending=False),
+                            width="stretch",
+                        )

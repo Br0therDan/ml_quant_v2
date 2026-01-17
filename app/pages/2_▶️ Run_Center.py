@@ -39,7 +39,7 @@ st.caption("이 페이지는 파이프라인(Batch/End-to-End) 오케스트레�
 col_controls, col_results = st.columns([0.3, 0.7], gap="small")
 
 
-@st.dialog("Live Run Log")
+@st.dialog("Live Run Log", width="large")
 def _live_log_dialog(run_id: str) -> None:
     st.caption("실행 중인 로그를 artifacts(pipeline.log)에서 tail로 표시합니다.")
 

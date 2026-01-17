@@ -1,0 +1,15 @@
+{
+  "ok": false,
+  "stage_name": "backtest",
+  "status": "fail",
+  "started_at": "2026-01-17T11:48:46.041056+00:00",
+  "ended_at": "2026-01-17T11:48:46.241744+00:00",
+  "elapsed_sec": 0.200688,
+  "stage_exec_id": null,
+  "meta": {},
+  "errors": [
+    "No approved targets found for demo_momentum_v1 in range 2025-12-18 ~ 2026-01-17"
+  ],
+  "warnings": [],
+  "generated_at": "2026-01-17T11:48:46.241767+00:00"
+}
