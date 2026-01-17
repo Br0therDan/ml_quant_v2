@@ -29,7 +29,7 @@ st.caption("Symbol 등록, 데이터 수집(Ingest) 및 상태 모니터링을 �
 col_controls, col_results = st.columns([0.3, 0.7], gap="small")
 
 with col_controls:
-    with st.container(border=True, height="stretch"):
+    with st.container(border=True, height=800):
         st.subheader("Controls")
 
         # 1. Symbol Search & Registration
@@ -40,15 +40,20 @@ with col_controls:
             if st.button("Search", width="stretch") or search_query:
                 if search_query:
                     try:
-                        provider = AlphaVantageProvider(
-                            api_key=settings.alpha_vantage_api_key
-                        )
-                        results_df = provider.search_symbols(search_query)
-                        if not results_df.empty:
-                            st.session_state["search_results"] = results_df
-                        else:
-                            st.warning("No results found.")
+                        api_key = settings.alpha_vantage_api_key
+                        if not api_key:
+                            st.error(
+                                "Alpha Vantage API key is not configured. Please set 'alpha_vantage_api_key' in settings."
+                            )
                             st.session_state["search_results"] = None
+                        else:
+                            provider = AlphaVantageProvider(api_key=api_key)
+                            results_df = provider.search_symbols(search_query)
+                            if not results_df.empty:
+                                st.session_state["search_results"] = results_df
+                            else:
+                                st.warning("No results found.")
+                                st.session_state["search_results"] = None
                     except Exception as e:
                         st.error(f"Search failed: {e}")
 
