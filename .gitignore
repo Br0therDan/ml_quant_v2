@@ -185,3 +185,5 @@ apps/alpha_lab/models/
 # End of https://www.toptal.com/developers/gitignore/api/python
 ml_alpha_lab.db
 
+# Pipeline artifacts
+artifacts/
