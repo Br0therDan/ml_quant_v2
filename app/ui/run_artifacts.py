@@ -2,19 +2,19 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from src.quant.config import settings
+from quant.config import settings
 
 
 @dataclass(frozen=True)
 class RunLookupResult:
     run_id: str
-    run_slug: Optional[str] = None
-    display_name: Optional[str] = None
-    artifacts_dir: Optional[str] = None
+    run_slug: str | None = None
+    display_name: str | None = None
+    artifacts_dir: str | None = None
 
 
 def runs_dir() -> Path:
@@ -33,7 +33,7 @@ def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def read_run_json(run_id: str) -> Optional[dict[str, Any]]:
+def read_run_json(run_id: str) -> dict[str, Any] | None:
     p = get_run_dir(run_id) / "run.json"
     if not p.exists():
         return None
@@ -43,7 +43,7 @@ def read_run_json(run_id: str) -> Optional[dict[str, Any]]:
         return None
 
 
-def read_stage_result(run_id: str, stage: str) -> Optional[dict[str, Any]]:
+def read_stage_result(run_id: str, stage: str) -> dict[str, Any] | None:
     p = get_run_dir(run_id) / "stages" / stage / "result.json"
     if not p.exists():
         return None
@@ -69,7 +69,7 @@ def list_stage_results(run_id: str) -> dict[str, dict[str, Any]]:
     return out
 
 
-def read_pipeline_log(run_id: str) -> Optional[str]:
+def read_pipeline_log(run_id: str) -> str | None:
     p = get_run_dir(run_id) / "pipeline.log"
     if not p.exists():
         return None
@@ -87,7 +87,7 @@ def tail_pipeline_log(run_id: str, *, lines: int = 200) -> str:
     return "\n".join(all_lines[-lines:])
 
 
-def parse_stage_elapsed_sec(result: dict[str, Any]) -> Optional[float]:
+def parse_stage_elapsed_sec(result: dict[str, Any]) -> float | None:
     if not result:
         return None
     if isinstance(result.get("elapsed_sec"), (int, float)):
@@ -154,7 +154,7 @@ def list_runs_from_run_json() -> list[dict[str, Any]]:
     return out
 
 
-def resolve_run_id_from_slug(run_slug: str) -> Optional[RunLookupResult]:
+def resolve_run_id_from_slug(run_slug: str) -> RunLookupResult | None:
     slug = (run_slug or "").strip()
     if not slug:
         return None
@@ -182,8 +182,8 @@ def write_initial_run_json(
     artifacts_dir: Path,
     invoked_command: str,
     kind: str = "pipeline",
-    plan_run_id: Optional[str] = None,
-    plan_artifacts_dir: Optional[str] = None,
+    plan_run_id: str | None = None,
+    plan_artifacts_dir: str | None = None,
 ) -> Path:
     """Create initial run.json for a newly started run (status=running).
 
@@ -191,7 +191,7 @@ def write_initial_run_json(
     """
 
     artifacts_dir.mkdir(parents=True, exist_ok=True)
-    now_utc = datetime.now(timezone.utc).isoformat()
+    now_utc = datetime.now(UTC).isoformat()
     payload: dict[str, Any] = {
         "run_id": str(run_id),
         "kind": str(kind),

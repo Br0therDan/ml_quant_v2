@@ -39,7 +39,7 @@ requires = ["hatchling>=1.24.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/quant"]
+packages = ["src/quant", "app"]
 
 [dependency-groups]
 dev = [
@@ -69,13 +69,14 @@ select = [
     "ARG", # flake8-unused-arguments
     "PT",  # flake8-pytest-style
 ]
-ignore = ["E501", "N806", "N803", "B008"] # Line too long, ML vars, Typer default calls
+ignore = ["E501", "N806", "N803", "B008", "E402", "SIM117", "SIM102", "ARG001", "ARG004", "PT011"] # Line too long, ML vars, Typer/Path patch, Streamlit nesting, unused args, pytest noise
 
 [tool.ruff.lint.isort]
 known-first-party = ["quant"]
 
 [tool.mypy]
 python_version = "3.11"
+mypy_path = "src"
 warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false

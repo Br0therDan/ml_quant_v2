@@ -1,15 +1,15 @@
+import json
 import os
 import subprocess
-from pathlib import Path
 import uuid
-import json
+from pathlib import Path
 
 import duckdb
 import numpy as np
 import pandas as pd
 import pytest
 
-from src.quant.strategy_lab.loader import StrategyLoader
+from quant.strategy_lab.loader import StrategyLoader
 
 
 def _env_for_tmp(tmp_path: Path) -> dict:

@@ -1,11 +1,12 @@
-import streamlit as st
-import duckdb
-import pandas as pd
 import os
 import sqlite3
-from pathlib import Path
 from collections import namedtuple
-from src.quant.config import settings
+
+import duckdb
+import pandas as pd
+import streamlit as st
+
+from quant.config import settings
 
 DB_PATH = str(settings.quant_duckdb_path)
 META_DB_PATH = str(settings.quant_sqlite_path)
@@ -56,7 +57,7 @@ def get_meta_connection():
         return None
     try:
         return sqlite3.connect(META_DB_PATH, check_same_thread=False)
-    except:
+    except Exception:
         return None
 
 
@@ -77,7 +78,7 @@ def load_runs(limit=100):
         )
         conn.close()
         return df
-    except:
+    except Exception:
         return pd.DataFrame()
 
 
@@ -97,7 +98,7 @@ def load_active_symbols():
         )
         conn.close()
         return [Symbol(row["symbol"]) for _, row in df.iterrows()]
-    except:
+    except Exception:
         return []
 
 
@@ -267,7 +268,7 @@ def load_pipeline_summary(limit=5):
         df = pd.read_sql(q, conn, params=[limit_i])
         conn.close()
         return df
-    except:
+    except Exception:
         return pd.DataFrame()
 
 
@@ -321,7 +322,7 @@ def load_pipeline_status():
 
     # 2) Legacy fallback: SQLite meta DB
     df = load_pipeline_summary(limit=50)
-    status_map: dict[str, dict] = {}
+    status_map = {}
     if df.empty:
         return status_map
 
@@ -444,7 +445,7 @@ def load_targets_comparison(strategy_id, asof):
         if idx + 1 >= len(dates_list):
             return pd.DataFrame()
         prev_asof = dates_list[idx + 1]
-    except:
+    except Exception:
         prev_asof = dates_list[1]  # Fallback to second latest
 
     df_prev = load_targets(strategy_id, str(prev_asof))

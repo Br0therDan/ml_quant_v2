@@ -1,13 +1,15 @@
-import streamlit as st
-import pandas as pd
+import contextlib
 from datetime import datetime, timedelta
-from app.ui.data_access import get_duckdb_connection, load_active_symbols
+
+import pandas as pd
+import streamlit as st
+
 from app.ui.charts import (
+    plot_correlation_matrix,
     plot_feature_analysis,
     plot_feature_distribution,
-    plot_correlation_matrix,
 )
-from app.ui.navigation import run_center_cta
+from app.ui.data_access import get_duckdb_connection, load_active_symbols
 
 st.set_page_config(
     page_title="Feature Lab | Quant Lab V2",
@@ -22,42 +24,41 @@ st.caption(
 # --- Layout ---
 col_controls, col_results = st.columns([0.2, 0.8], gap="small")
 
-with col_controls:
-    with st.container(border=True, height="stretch"):
-        st.subheader("Configuration")
+with col_controls, st.container(border=True, height="stretch"):
+    st.subheader("Configuration")
 
-        # Universe
-        active_symbols = load_active_symbols()
-        all_syms = [s.symbol for s in active_symbols] if active_symbols else []
+    # Universe
+    active_symbols = load_active_symbols()
+    all_syms = [s.symbol for s in active_symbols] if active_symbols else []
 
-        scope_mode = st.radio("Scope", ["Single Symbol", "Universe"], horizontal=True)
+    scope_mode = st.radio("Scope", ["Single Symbol", "Universe"], horizontal=True)
 
-        selected_symbols = []
-        if scope_mode == "Single Symbol":
-            selected_symbols = [st.selectbox("Symbol", all_syms)] if all_syms else []
-        else:
-            selected_symbols = st.multiselect(
-                "Symbols",
-                all_syms,
-                default=all_syms[:3] if len(all_syms) > 3 else all_syms,
-            )
-
-        # Date Range
-        today = datetime.today()
-        start_date = st.date_input("From", today - timedelta(days=90))
-        end_date = st.date_input("To", today)
-
-        # Presets (Mockup logic for V2 specific features)
-        st.markdown("---")
-        st.caption("Feature Selection")
-        preset = st.selectbox(
-            "Preset", ["All", "Trend", "Volatility", "Momentum", "Custom"]
+    selected_symbols = []
+    if scope_mode == "Single Symbol":
+        selected_symbols = [st.selectbox("Symbol", all_syms)] if all_syms else []
+    else:
+        selected_symbols = st.multiselect(
+            "Symbols",
+            all_syms,
+            default=all_syms[:3] if len(all_syms) > 3 else all_syms,
         )
 
-        st.markdown("---")
-        st.caption(
-            "새 피처 계산을 원하면 Run Center에서 pipeline 또는 features 단계를 실행하세요."
-        )
+    # Date Range
+    today = datetime.today()
+    start_date = st.date_input("From", today - timedelta(days=90))
+    end_date = st.date_input("To", today)
+
+    # Presets (Mockup logic for V2 specific features)
+    st.markdown("---")
+    st.caption("Feature Selection")
+    preset = st.selectbox(
+        "Preset", ["All", "Trend", "Volatility", "Momentum", "Custom"]
+    )
+
+    st.markdown("---")
+    st.caption(
+        "새 피처 계산을 원하면 Run Center에서 pipeline 또는 features 단계를 실행하세요."
+    )
 
 with col_results:
     with st.container(border=True, height=800):
@@ -109,10 +110,8 @@ with col_results:
                                 except Exception:
                                     df_long = pd.DataFrame()
                     finally:
-                        try:
+                        with contextlib.suppress(Exception):
                             conn.close()
-                        except Exception:
-                            pass
 
                 if df_long.empty:
                     st.warning("No feature data found.")
@@ -130,7 +129,9 @@ with col_results:
                         ["Timeseries", "Distribution", "Correlation", "Missingness"]
                     )
 
-                    feature_cols = [c for c in df_wide.columns if c not in ["ts", "symbol"]]
+                    feature_cols = [
+                        c for c in df_wide.columns if c not in ["ts", "symbol"]
+                    ]
 
                     with t_ts:
                         # Filter by feature preset logic (simple name match)
@@ -149,7 +150,9 @@ with col_results:
                             ]
 
                         if not disp_cols:
-                            st.info(f"No features match preset '{preset}'. Showing all.")
+                            st.info(
+                                f"No features match preset '{preset}'. Showing all."
+                            )
                             disp_cols = feature_cols
 
                         # Plot for first symbol only to avoid mess

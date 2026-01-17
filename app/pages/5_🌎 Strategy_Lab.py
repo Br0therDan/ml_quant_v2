@@ -1,16 +1,15 @@
-import streamlit as st
 import os
-from datetime import datetime, timedelta
+
+import streamlit as st
 from streamlit_monaco import st_monaco
 
-from src.quant.ui.services.strategy_files import (
+from app.ui.data_access import load_targets, load_targets_history
+from quant.ui.services import yaml_validate as yaml_validate
+from quant.ui.services.strategy_files import (
     list_strategies,
     load_strategy_content,
     save_strategy_as,
 )
-from src.quant.ui.services import yaml_validate as yaml_validate
-from app.ui.data_access import load_targets, load_targets_history
-from app.ui.navigation import run_center_cta
 
 
 def _get_yaml_validator():
@@ -73,71 +72,68 @@ if "current_file" not in st.session_state:
 # --- Layout: 2-Panel ---
 col_controls, col_results = st.columns([0.3, 0.7])
 
-with col_controls:
-    with st.container(border=True, height="stretch"):
-        st.subheader("Strategy Selection")
+with col_controls, st.container(border=True, height="stretch"):
+    st.subheader("Strategy Selection")
 
-        # File Picker
-        all_files = list_strategies()
-        selected_file = st.selectbox(
-            "Select Strategy YAML", all_files, index=0 if all_files else None
-        )
+    # File Picker
+    all_files = list_strategies()
+    selected_file = st.selectbox(
+        "Select Strategy YAML", all_files, index=0 if all_files else None
+    )
 
-        if selected_file != st.session_state["current_file"]:
-            if selected_file is not None:
-                content = load_strategy_content(selected_file)
-                if content is not None:
-                    st.session_state["last_loaded_text"] = content
-                    st.session_state["monaco_content"] = content
-                    st.session_state["current_file"] = selected_file
+    if selected_file != st.session_state["current_file"]:
+        if selected_file is not None:
+            content = load_strategy_content(selected_file)
+            if content is not None:
+                st.session_state["last_loaded_text"] = content
+                st.session_state["monaco_content"] = content
+                st.session_state["current_file"] = selected_file
 
-        # Action Buttons
-        st.markdown("---")
+    # Action Buttons
+    st.markdown("---")
 
-        # Content Access for Buttons
-        # Note: In a real app, we'd need a way to get the LATEST editor content
-        # but st_monaco returns the current content on change.
-        last_loaded_text = st.session_state["last_loaded_text"]
-        editor_content = _coerce_editor_text(
-            st.session_state.get("monaco_content"), fallback=last_loaded_text
-        )
-        is_dirty = editor_content != last_loaded_text
+    # Content Access for Buttons
+    # Note: In a real app, we'd need a way to get the LATEST editor content
+    # but st_monaco returns the current content on change.
+    last_loaded_text = st.session_state["last_loaded_text"]
+    editor_content = _coerce_editor_text(
+        st.session_state.get("monaco_content"), fallback=last_loaded_text
+    )
+    is_dirty = editor_content != last_loaded_text
 
-        is_valid, validation_errors, validation_warnings = (
-            validate_strategy_yaml_with_warnings(editor_content)
-        )
+    is_valid, validation_errors, validation_warnings = (
+        validate_strategy_yaml_with_warnings(editor_content)
+    )
 
-        # 1. Validate
-        if st.button("🔍 Validate YAML", width="stretch"):
-            if is_valid:
-                st.success("YAML is valid!")
-            else:
-                for err in validation_errors:
-                    st.error(err)
-            for w in validation_warnings:
-                st.warning(w)
+    # 1. Validate
+    if st.button("🔍 Validate YAML", width="stretch"):
+        if is_valid:
+            st.success("YAML is valid!")
+        else:
+            for err in validation_errors:
+                st.error(err)
+        for w in validation_warnings:
+            st.warning(w)
 
-        # 2. Save As
-        with st.popover("💾 Save As...", width="stretch"):
-            new_name = st.text_input("New Filename", placeholder="strategy_v2.yaml")
-            if st.button("Confirm Save", type="primary"):
-                if new_name:
-                    if save_strategy_as(new_name, editor_content):
-                        st.success(f"Saved to strategies/{os.path.basename(new_name)}")
-                        st.session_state["last_loaded_text"] = editor_content
-                        st.rerun()
-                    else:
-                        st.error("Save failed.")
+    # 2. Save As
+    with st.popover("💾 Save As...", width="stretch"):
+        new_name = st.text_input("New Filename", placeholder="strategy_v2.yaml")
+        if st.button("Confirm Save", type="primary"):
+            if new_name:
+                if save_strategy_as(new_name, editor_content):
+                    st.success(f"Saved to strategies/{os.path.basename(new_name)}")
+                    st.session_state["last_loaded_text"] = editor_content
+                    st.rerun()
                 else:
-                    st.warning("Enter a name.")
+                    st.error("Save failed.")
+            else:
+                st.warning("Enter a name.")
 
-        st.markdown("---")
-        if is_dirty:
-            st.warning(
-                "⚠️ 저장되지 않은 변경사항이 있습니다. 실행은 Run Center에서 하세요."
-            )
+    st.markdown("---")
+    if is_dirty:
+        st.warning("⚠️ 저장되지 않은 변경사항이 있습니다. 실행은 Run Center에서 하세요.")
 
-        st.caption("실행/드라이런은 Run Center에서 동일 전략 YAML을 선택해 수행합니다.")
+    st.caption("실행/드라이런은 Run Center에서 동일 전략 YAML을 선택해 수행합니다.")
 
 with col_results:
     with st.container(border=True, height=800):

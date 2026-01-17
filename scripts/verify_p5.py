@@ -1,10 +1,12 @@
+from datetime import datetime, timedelta
+
 import duckdb
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
-from datetime import datetime, timedelta
-from src.quant.backtest_engine.engine import BacktestEngine
-from src.quant.config import settings
+
+from quant.backtest_engine.engine import BacktestEngine
+from quant.config import settings
 
 console = Console()
 
@@ -16,7 +18,7 @@ def setup_dummy_data(conn, strategy_id: str, start_date: str, days: int):
 
     # 1. OHLCV
     ohlcv_data = []
-    prices = {s: 100.0 for s in symbols}
+    prices = dict.fromkeys(symbols, 100.0)
 
     # Generate 5 days prior + test range + buffer
     total_days = days + 10

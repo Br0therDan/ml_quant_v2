@@ -1,19 +1,20 @@
-import streamlit as st
-import pandas as pd
-import uuid
 import time
+import uuid
 from datetime import datetime, timedelta
+
+import pandas as pd
+import streamlit as st
+
+from app.ui.charts import plot_market_explorer_chart
 from app.ui.data_access import (
     load_active_symbols,
-    load_symbol_inventory,
     load_ohlcv,
+    load_symbol_inventory,
 )
-from app.ui.charts import plot_market_explorer_chart
-from app.ui.navigation import run_center_cta
-from app.ui.run_artifacts import list_runs_from_run_json
 from app.ui.execution import ExecutionManager
-from src.quant.data_curator.provider import AlphaVantageProvider
-from src.quant.config import settings
+from app.ui.run_artifacts import list_runs_from_run_json
+from quant.config import settings
+from quant.data_curator.provider import AlphaVantageProvider
 
 st.set_page_config(
     page_title="Data Center | Quant Lab V2",

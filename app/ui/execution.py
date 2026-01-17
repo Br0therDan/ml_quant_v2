@@ -1,15 +1,13 @@
-import subprocess
-import threading
 import os
-import time
-import signal
+import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict
+
 import streamlit as st
-import pandas as pd
-from src.quant.config import settings
+
+from quant.config import settings
 
 
 def _legacy_log_dir() -> Path:
@@ -21,7 +19,8 @@ def _legacy_log_dir() -> Path:
 
     enabled = os.getenv("QUANT_UI_ENABLE_LEGACY_LOGS", "0") == "1"
     p = settings.quant_data_dir.parent / "logs" / "ui_exec"
-    p.mkdir(parents=True, exist_ok=True)
+    if enabled:
+        p.mkdir(parents=True, exist_ok=True)
     return p
 
 
@@ -34,10 +33,10 @@ class ExecutionManager:
 
     @staticmethod
     def run_command_async(
-        command: List[str],
+        command: list[str],
         run_key: str,
-        cwd: Optional[Path] = None,
-        env: Optional[Dict] = None,
+        cwd: Path | None = None,
+        env: dict | None = None,
     ) -> bool:
         """
         Runs a command asynchronously, redirecting stdout/stderr to a log file.
@@ -109,7 +108,7 @@ class ExecutionManager:
         return True
 
     @staticmethod
-    def start_run(command: List[str], run_key: str) -> bool:
+    def start_run(command: list[str], run_key: str) -> bool:
         """Start run with PID tracking."""
         log_file = ExecutionManager.get_log_path(run_key)
         pid_file = _legacy_log_dir() / f"{run_key}.pid"
@@ -140,11 +139,11 @@ class ExecutionManager:
 
     @staticmethod
     def start_run_with_artifacts(
-        command: List[str],
+        command: list[str],
         *,
         artifacts_dir: Path,
-        cwd: Optional[Path] = None,
-        env: Optional[Dict] = None,
+        cwd: Path | None = None,
+        env: dict | None = None,
     ) -> bool:
         """Start a run and write logs+status files under artifacts/runs/<run_id>/.
 
@@ -209,7 +208,7 @@ class ExecutionManager:
             return False
 
     @staticmethod
-    def read_exit_code(artifacts_dir: Path) -> Optional[int]:
+    def read_exit_code(artifacts_dir: Path) -> int | None:
         p = artifacts_dir / "exit_code.txt"
         if not p.exists():
             return None

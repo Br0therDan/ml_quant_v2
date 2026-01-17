@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 RUN_CENTER_PAGE = "pages/2_Run_Center.py"
 
 

@@ -6,11 +6,9 @@ import textwrap
 import uuid
 from pathlib import Path
 
-import pytest
-
 
 def test_progress_events_parser():
-    from app.ui.progress_events import parse_progress_events, latest_progress_by_stage
+    from app.ui.progress_events import latest_progress_by_stage, parse_progress_events
 
     log_text = "\n".join(
         [

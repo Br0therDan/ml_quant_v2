@@ -5,13 +5,13 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
-import subprocess
-import duckdb
-from src.quant.config import settings
-
-import pytest
 import shutil
+import subprocess
 
+import duckdb
+import pytest
+
+from quant.config import settings
 
 if os.getenv("RUN_E2E") != "1":
     pytest.skip("E2E ingest test is opt-in (set RUN_E2E=1)", allow_module_level=True)

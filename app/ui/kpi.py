@@ -32,5 +32,5 @@ def render_kpi_card(title, value, delta=None, color=None):
         label=title,
         value=value,
         delta=delta,
-        delta_color="normal" if not color else color,
+        delta_color=color if color else "normal",
     )

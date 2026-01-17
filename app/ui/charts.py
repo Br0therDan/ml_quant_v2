@@ -1,7 +1,6 @@
-import plotly.graph_objects as go
-import plotly.express as px
 import pandas as pd
-import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
@@ -75,7 +74,7 @@ def plot_price_with_markers(df_ohlcv, df_trades, symbol, threshold=0.0, mode="Li
                 y=df_ohlcv["close"],
                 mode="lines",
                 name="Price",
-                line=dict(color="#2196f3", width=2),
+                line={"color": "#2196f3", "width": 2},
             )
         )
 
@@ -92,9 +91,9 @@ def plot_price_with_markers(df_ohlcv, df_trades, symbol, threshold=0.0, mode="Li
                     x=entries["entry_ts"],
                     y=entries["entry_price"],
                     mode="markers",
-                    marker=dict(
-                        symbol="triangle-up", size=10, color="#26a69a"
-                    ),  # Green Up
+                    marker={
+                        "symbol": "triangle-up", "size": 10, "color": "#26a69a"
+                    },  # Green Up
                     name="Buy",
                     text=entries.apply(
                         lambda x: (
@@ -117,9 +116,9 @@ def plot_price_with_markers(df_ohlcv, df_trades, symbol, threshold=0.0, mode="Li
                     x=exits["exit_ts"],
                     y=exits["exit_price"],
                     mode="markers",
-                    marker=dict(
-                        symbol="triangle-down", size=10, color="#ef5350"
-                    ),  # Red Down
+                    marker={
+                        "symbol": "triangle-down", "size": 10, "color": "#ef5350"
+                    },  # Red Down
                     name="Sell",
                     text=exits.apply(
                         lambda x: (
@@ -202,7 +201,7 @@ def plot_market_explorer_chart(
                 y=df["close"],
                 mode="lines",
                 name="Close",
-                line=dict(color="#2196f3", width=2),
+                line={"color": "#2196f3", "width": 2},
             ),
             row=1,
             col=1,
@@ -219,7 +218,7 @@ def plot_market_explorer_chart(
                     y=sma,
                     mode="lines",
                     name=f"SMA({period})",
-                    line=dict(width=1.5, color=colors[i % len(colors)]),
+                    line={"width": 1.5, "color": colors[i % len(colors)]},
                 ),
                 row=1,
                 col=1,
@@ -238,8 +237,8 @@ def plot_market_explorer_chart(
                 x=df["ts"],
                 y=upper,
                 mode="lines",
-                name=f"BB Upper",
-                line=dict(width=1, color="rgba(173, 216, 230, 0.4)"),
+                name="BB Upper",
+                line={"width": 1, "color": "rgba(173, 216, 230, 0.4)"},
             ),
             row=1,
             col=1,
@@ -249,8 +248,8 @@ def plot_market_explorer_chart(
                 x=df["ts"],
                 y=lower,
                 mode="lines",
-                name=f"BB Lower",
-                line=dict(width=1, color="rgba(173, 216, 230, 0.4)"),
+                name="BB Lower",
+                line={"width": 1, "color": "rgba(173, 216, 230, 0.4)"},
                 fill="tonexty",
                 fillcolor="rgba(173, 216, 230, 0.2)",
             ),
@@ -261,7 +260,7 @@ def plot_market_explorer_chart(
     # 4. Volume Overlay
     if vol_overlay:
         colors = [
-            "#26a69a" if c >= o else "#ef5350" for o, c in zip(df["open"], df["close"])
+            "#26a69a" if c >= o else "#ef5350" for o, c in zip(df["open"], df["close"], strict=False)
         ]
         fig.add_trace(
             go.Bar(
@@ -290,7 +289,7 @@ def plot_market_explorer_chart(
                 y=rsi,
                 mode="lines",
                 name="RSI",
-                line=dict(color="#7e57c2", width=1.5),
+                line={"color": "#7e57c2", "width": 1.5},
             ),
             row=2,
             col=1,
@@ -303,8 +302,8 @@ def plot_market_explorer_chart(
     fig.update_layout(
         template="plotly_white",
         height=700 if rsi_period else 600,
-        margin=dict(l=50, r=50, t=20, b=50),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin={"l": 50, "r": 50, "t": 20, "b": 50},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
         xaxis_rangeslider_visible=False,
     )
 
@@ -333,7 +332,7 @@ def plot_feature_analysis(df_feat):
     # 1. Feature Time Series
     cols = [c for c in df_feat.columns if c != "ts" and c != "symbol"]
     fig_line = px.line(df_feat, x="ts", y=cols, title="Feature Time Series")
-    fig_line.update_layout(template="plotly_white", legend=dict(orientation="h"))
+    fig_line.update_layout(template="plotly_white", legend={"orientation": "h"})
 
     # 2. Histogram for first feature by default (or let user choose needed logic in page)
     # We just return the line chart primarily here for now if logic is complex.
@@ -422,6 +421,6 @@ def plot_backtest_comparison(run1_data, run2_data, run1_id, run2_id):
         xaxis_title="Date",
         yaxis_title="Equity",
         template="plotly_white",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
     )
     return fig

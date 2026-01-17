@@ -1,29 +1,30 @@
-import streamlit as st
 import json
 import os
 import subprocess
-import sys
 import uuid
-import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
-from src.quant.config import settings
+
+import pandas as pd
+import streamlit as st
+
+from app.ui.data_access import load_pipeline_summary
 from app.ui.execution import ExecutionManager
-from app.ui.data_access import load_pipeline_summary, load_run_status, load_stage_runs
+from app.ui.progress_events import latest_progress_by_stage, parse_progress_events
 from app.ui.run_artifacts import (
     get_run_dir,
     list_alias_index,
     list_runs_from_run_json,
-    read_pipeline_log,
-    read_run_json,
     list_stage_results,
     parse_stage_elapsed_sec,
     parse_stage_errors,
+    read_pipeline_log,
+    read_run_json,
     resolve_run_id_from_slug,
     tail_pipeline_log,
     write_initial_run_json,
 )
-from app.ui.progress_events import parse_progress_events, latest_progress_by_stage
+from quant.config import settings
 
 st.set_page_config(
     page_title="Run Center | Quant Lab V2",
@@ -384,8 +385,8 @@ with col_results:
 
                 if v.get("errors"):
                     st.error("Validation Errors")
-                    for e in v.get("errors"):
-                        st.write(f"- {e}")
+                    for err in v.get("errors"):
+                        st.write(f"- {err}")
                 if v.get("warnings"):
                     st.warning("Validation Warnings")
                     for w in v.get("warnings"):
@@ -493,8 +494,8 @@ with col_results:
                             st.markdown(f"- elapsed_sec: **{elapsed:.2f}**")
                         if errors:
                             st.error("errors")
-                            for e in errors:
-                                st.write(f"- {e}")
+                            for err in errors:
+                                st.write(f"- {err}")
                         st.json(r)
 
                 st.markdown("---")

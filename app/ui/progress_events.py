@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, Optional
-
+from typing import Any
 
 PROGRESS_PREFIX = "PROGRESS_JSON:"
 
 
 @dataclass(frozen=True)
 class ProgressEvent:
-    stage: Optional[str]
-    event: Optional[str]
-    current: Optional[int]
-    total: Optional[int]
+    stage: str | None
+    event: str | None
+    current: int | None
+    total: int | None
     payload: dict[str, Any]
 
 
@@ -31,7 +30,7 @@ def parse_progress_events(log_text: str) -> list[ProgressEvent]:
         except Exception:
             continue
 
-        def _to_int(v: Any) -> Optional[int]:
+        def _to_int(v: Any) -> int | None:
             try:
                 if v is None:
                     return None
