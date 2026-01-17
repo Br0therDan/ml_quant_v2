@@ -16,16 +16,10 @@ st.set_page_config(page_title="Targets Analyzer", layout="wide", page_icon="🎯
 # --- Page Title ---
 st.title(
     "🎯 Targets Analyzer",
-    help="Strategy target result analysis and visualization. Execution (including recommendations and backtests) is only available in Run Center.",
-)
-st.caption(
-    "⚠️ Targets Analyzer는 결과 분석 전용입니다.실행(추천/백테스트 포함)은 Run Center에서만 가능합니다."
+    help="⚠️ Targets Analyzer는 결과 분석 전용입니다.실행(추천/백테스트 포함)은 Run Center에서만 가능합니다.",
 )
 
-# run_center_cta(
-#     title="⚠️ ",
-#     body="Targets Analyzer는 결과 분석 전용입니다.",
-# )
+
 
 # --- Layout: 2-Panel ---
 ctrl_col, res_col = st.columns([0.28, 0.72], gap="small")

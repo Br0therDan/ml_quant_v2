@@ -202,150 +202,42 @@ with col_results:
                 st.caption(
                     "`OHLCV Rows/From/To`는 DuckDB(ohlcv) 기준이며, 0이면 아직 ingest되지 않았을 수 있습니다."
                 )
-                
-                
-            # st.markdown("---")
-            # st.subheader(
-            # "Ingestion Monitoring",
-            # help="인제스트 상태는 (1) DuckDB 커버리지, (2) 최근 pipeline run.json(artifacts) 요약으로 관측합니다.",
-            # )
-            # if inventory_df.empty:
-            #     st.info("표시할 심볼 인벤토리가 없습니다.")
-            # else:
-            #     # st.markdown("**1) Coverage from DuckDB (ohlcv)**")
-            #     cov = inventory_df[["symbol", "count", "min_date", "max_date"]].copy()
-            #     cov = cov.rename(
-            #         columns={
-            #             "symbol": "Symbol",
-            #             "count": "Rows",
-            #             "min_date": "From",
-            #             "max_date": "To",
-            #         }
-            #     )
-            #     st.dataframe(cov, hide_index=True, width="stretch")
-
-            # st.markdown("**2) Recent pipeline runs (artifacts/runs/*/run.json)**")
-            # runs = list_runs_from_run_json()
-            # ingest_rows: list[dict] = []
-            # for r in runs[:200]:
-            #     stage_results = r.get("stage_results") or []
-            #     if not isinstance(stage_results, list):
-            #         continue
-            #     for sr in stage_results:
-            #         if not isinstance(sr, dict):
-            #             continue
-            #         if (sr.get("stage_name") or "").strip().lower() != "ingest":
-            #             continue
-            #         ingest_rows.append(
-            #             {
-            #                 "run_id": r.get("run_id"),
-            #                 "run_slug": r.get("run_slug"),
-            #                 "status": sr.get("status"),
-            #                 "started_at": r.get("started_at"),
-            #                 "duration_sec": sr.get("duration_sec"),
-            #             }
-            #         )
-
-            # if ingest_rows:
-            #     st.dataframe(
-            #         pd.DataFrame(ingest_rows)[:50], hide_index=True, width="stretch"
-            #     )
-            # else:
-            #     st.caption("No ingest stage results found in recent run.json files.")
-
-        # with tab_ingest:
-        #     st.subheader(
-        #         "Ingestion Monitoring",
-        #         help="인제스트 상태는 (1) DuckDB 커버리지, (2) 최근 pipeline run.json(artifacts) 요약으로 관측합니다.",
-        #     )
-
-        #     if inventory_df.empty:
-        #         st.info("표시할 심볼 인벤토리가 없습니다.")
-        #     else:
-        #         st.markdown("**1) Coverage from DuckDB (ohlcv)**")
-        #         cov = inventory_df[["symbol", "count", "min_date", "max_date"]].copy()
-        #         cov = cov.rename(
-        #             columns={
-        #                 "symbol": "Symbol",
-        #                 "count": "Rows",
-        #                 "min_date": "From",
-        #                 "max_date": "To",
-        #             }
-        #         )
-        #         st.dataframe(cov, hide_index=True, width="stretch")
-
-        #     st.markdown("**2) Recent pipeline runs (artifacts/runs/*/run.json)**")
-        #     runs = list_runs_from_run_json()
-        #     ingest_rows: list[dict] = []
-        #     for r in runs[:200]:
-        #         stage_results = r.get("stage_results") or []
-        #         if not isinstance(stage_results, list):
-        #             continue
-        #         for sr in stage_results:
-        #             if not isinstance(sr, dict):
-        #                 continue
-        #             if (sr.get("stage_name") or "").strip().lower() != "ingest":
-        #                 continue
-        #             ingest_rows.append(
-        #                 {
-        #                     "run_id": r.get("run_id"),
-        #                     "run_slug": r.get("run_slug"),
-        #                     "status": sr.get("status"),
-        #                     "started_at": r.get("started_at"),
-        #                     "duration_sec": sr.get("duration_sec"),
-        #                 }
-        #             )
-
-        #     if ingest_rows:
-        #         st.dataframe(
-        #             pd.DataFrame(ingest_rows)[:50], hide_index=True, width="stretch"
-        #         )
-        #     else:
-        #         st.caption("No ingest stage results found in recent run.json files.")
 
         with tab_market:
-            # 1. Market Explorer Controls (Horizontal arrangement in a bordered container)
-            with st.container(border=True):
-                c1, c2, c3, c4 = st.columns([1.5, 3, 2, 2.5])
+            # 1. Market Explorer Controls
 
-                with c1:
-                    active_symbols = load_active_symbols()
-                    symbol = st.selectbox(
-                        "Symbol",
-                        (
-                            [s.symbol for s in active_symbols]
-                            if active_symbols
-                            else ["AAPL"]
-                        ),
-                        key="selected_symbol",
-                    )
+            c1, c2, c3 = st.columns([3, 4, 3])
 
-                with c2:
-                    # Range as a horizontal button group (radio horizontal)
-                    range_option = st.radio(
-                        "Range",
-                        ["1M", "3M", "6M", "1Y", "MAX"],
-                        index=1,
-                        horizontal=True,
-                        key="range_option_explorer",
-                    )
+            with c1:
+                active_symbols = load_active_symbols()
+                symbol = st.selectbox(
+                    "Symbol",
+                    (
+                        [s.symbol for s in active_symbols]
+                        if active_symbols
+                        else ["AAPL"]
+                    ),
+                    key="selected_symbol",
+                )
 
-                with c3:
-                    chart_display = st.radio(
-                        "Style",
-                        ["Candle", "Line"],
-                        horizontal=True,
-                        key="chart_style_explorer",
-                    )
-                    chart_type = "Candlestick" if chart_display == "Candle" else "Line"
+            with c2:
+                # Range as a horizontal button group (radio horizontal)
+                range_option = st.radio(
+                    "Range",
+                    ["1M", "3M", "6M", "1Y", "3Y", "MAX"],
+                    index=1,
+                    horizontal=True,
+                    key="range_option_explorer",
+                )
 
-                with c4:
-                    # st.write("Options")
-                    oc1, oc2 = st.columns(2)
-                    log_scale = oc1.checkbox("Log", key="log_scale_explorer")
-                    vol_overlay = oc2.checkbox(
-                        "Vol", value=True, key="vol_overlay_explorer"
-                    )
+            with c3:
+                chart_display = st.radio(
+                    "Style",
+                    ["Candle", "Line"],
+                    horizontal=True,
+                    key="chart_style_explorer",
+                )
+                chart_type = "Candlestick" if chart_display == "Candle" else "Line"
 
             # 2. Date Calculation based on range_option
             today = datetime.today()
@@ -357,8 +249,10 @@ with col_results:
                 start_date = today - timedelta(days=180)
             elif range_option == "1Y":
                 start_date = today - timedelta(days=365)
+            elif range_option == "3Y":
+                start_date = today - timedelta(days=1095)
             else:
-                start_date = datetime(2020, 1, 1)
+                start_date = datetime(1990, 1, 1)
 
             from_str = start_date.strftime("%Y-%m-%d")
             to_str = today.strftime("%Y-%m-%d")
@@ -371,10 +265,18 @@ with col_results:
                 st.info("Chart will be displayed once data is ingested.")
             else:
                 with st.container(border=True):
-                    st.markdown(
-                        f"**Price Chart**: **`{symbol} ({from_str} ~ {to_str})`**"
-                    )
-                    
+                    c1, c2 = st.columns([7, 3])
+                    with c1:
+                        st.markdown(
+                            f"**Price Chart**: **`{symbol} ({from_str} ~ {to_str})`**"
+                        )
+                    with c2:
+                        oc1, oc2 = st.columns(2,)
+                        log_scale = oc1.checkbox("Log", key="log_scale_explorer")
+                        vol_overlay = oc2.checkbox(
+                            "Vol", value=True, key="vol_overlay_explorer"
+                        )
+
                     fig = plot_market_explorer_chart(
                         df_ohlcv,
                         chart_type=chart_type,
@@ -383,7 +285,7 @@ with col_results:
                         sma_list=[20, 60],
                     )
                     if fig is not None:
-                        st.plotly_chart(fig, width="stretch", height=400)
+                        st.plotly_chart(fig, width="stretch", height=360)
                     else:
                         st.warning(
                             "Failed to generate chart for the selected symbol/date range."

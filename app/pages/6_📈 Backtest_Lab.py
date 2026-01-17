@@ -19,15 +19,9 @@ st.set_page_config(
 
 st.title(
     "📈 Backtest Lab",
-    help="Backtest result exploration and comparison. Execution (including re-running backtests) is only available in Run Center.",
+    help="⚠️ 실행(백테스트 재실행 포함)은 Run Center에서만 가능합니다. Backtest Lab은 결과 탐색/비교 전용입니다.",
 )
-st.caption(
-    "⚠️ 실행(백테스트 재실행 포함)은 Run Center에서만 가능합니다. Backtest Lab은 결과 탐색/비교 전용입니다."
-)
-# run_center_cta(
-#     title="실행(백테스트 재실행 포함)은 Run Center에서만 가능합니다.",
-#     body="Backtest Lab은 결과 탐색/비교 전용입니다.",
-# )
+
 
 # --- Layout: 2-Panel ---
 ctrl_col, res_col = st.columns([0.2, 0.8], gap="small")
@@ -78,15 +72,7 @@ with ctrl_col, st.container(border=True, height="stretch"):
         log_scale = c1.toggle("Log", value=False)
         vol_overlay = c2.toggle("Volume", value=True)
 
-        st.divider()
 
-        # 4. New Backtest Execution (Shortcut)
-        st.subheader("New Backtest")
-        # Minimal inputs for re-run
-        # We assume user wants to re-run the *same* strategy?
-        # Or just a generic Runner button pointing to Run Center.
-        if st.button("Run New Backtest", type="primary", width="stretch"):
-            st.info("Run Center에서 backtest 단계를 실행해 새 결과를 생성하세요.")
 
 with res_col:
     with st.container(border=True, height=800):

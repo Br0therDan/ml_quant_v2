@@ -45,7 +45,7 @@ with col_controls, st.container(border=True, height="stretch"):
 
     # Date Range
     today = datetime.today()
-    start_date = st.date_input("From", today - timedelta(days=90))
+    start_date = st.date_input("From", today - timedelta(days=365))
     end_date = st.date_input("To", today)
 
     # Presets (Mockup logic for V2 specific features)

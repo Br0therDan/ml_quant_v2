@@ -187,3 +187,6 @@ ml_alpha_lab.db
 
 # Pipeline artifacts
 artifacts/
+
+# Database
+data/quant.duckdb

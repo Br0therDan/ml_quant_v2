@@ -4,6 +4,7 @@ import contextlib
 import hashlib
 import json
 import logging
+import os
 import re
 import uuid
 from collections.abc import Callable
@@ -303,11 +304,14 @@ class PipelineRunner:
         for s in symbols:
             if s is None:
                 continue
-            sym = str(s).strip().upper()
-            if not sym or sym in seen:
-                continue
-            seen.add(sym)
-            out.append(sym)
+            # Comma-aware splitting for robustness (e.g., ["AAPL, MSFT"])
+            raw_parts = str(s).split(",")
+            for part in raw_parts:
+                sym = part.strip().upper()
+                if not sym or sym in seen:
+                    continue
+                seen.add(sym)
+                out.append(sym)
         return out
 
     def _resolve_symbols_from_strategy(
