@@ -157,6 +157,18 @@ with col_controls:
             else:
                 st.info("No active symbols found.")
 
+        # 3. DB Maintenance
+        with st.expander("🛠️ Maintenance", expanded=False):
+            st.warning(
+                "DB 초기화는 기존 데이터를 유지하면서 스킴을 확인하거나 누락된 테이블을 생성합니다."
+            )
+            if st.button("Initialize Database (init-db)", width="stretch"):
+                run_id = f"init_db_{datetime.now().strftime('%H%M%S')}"
+                cmd = ["uv", "run", "quant", "init-db"]
+                success = ExecutionManager.run_command_async(cmd, run_id)
+                if success:
+                    st.success("Database initialization started.")
+
         # Display feedback for recent actions
         if "data_center_msg" in st.session_state:
             st.info(st.session_state["data_center_msg"])
@@ -170,9 +182,7 @@ with col_results:
 
         inventory_df = load_symbol_inventory()
 
-        tab_registry, tab_market = st.tabs(
-            ["📌 Symbol Registry", "📈 Market Explorer"]
-        )
+        tab_registry, tab_market = st.tabs(["📌 Symbol Registry", "📈 Market Explorer"])
 
         with tab_registry:
 
@@ -271,7 +281,9 @@ with col_results:
                             f"**Price Chart**: **`{symbol} ({from_str} ~ {to_str})`**"
                         )
                     with c2:
-                        oc1, oc2 = st.columns(2,)
+                        oc1, oc2 = st.columns(
+                            2,
+                        )
                         log_scale = oc1.checkbox("Log", key="log_scale_explorer")
                         vol_overlay = oc2.checkbox(
                             "Vol", value=True, key="vol_overlay_explorer"
