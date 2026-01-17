@@ -10,7 +10,7 @@ from quant.config import settings
 
 
 class MarketDataService:
-    def __init__(self, api_key: str = None, read_only: bool = False):
+    def __init__(self, api_key: str | None = None, read_only: bool = False):
         self.client = LocalMarketDataClient(
             api_key=api_key or settings.alpha_vantage_api_key
         )

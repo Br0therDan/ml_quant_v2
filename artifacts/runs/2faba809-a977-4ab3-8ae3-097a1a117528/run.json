@@ -1,0 +1,111 @@
+{
+  "run_id": "2faba809-a977-4ab3-8ae3-097a1a117528",
+  "run_slug": "demo_momentum_v1__2025-12-18_2026-01-17__ingest-feat-lbl-rec-bt__nvda__2faba809",
+  "display_name": "demo_momentum_v1 | 2025-12-18..2026-01-17 | ingest-feat-lbl-rec-bt | NVDA",
+  "kind": "pipeline",
+  "invoked_command": "/Users/donghakim/ml_quant_v2/.venv/bin/quant pipeline run --strategy strategies/example.yaml --from 2025-12-18 --to 2026-01-17 --run-id 2faba809-a977-4ab3-8ae3-097a1a117528 --symbols NVDA --stages ingest,features,labels,recommend,backtest",
+  "artifacts_dir": "artifacts/runs/2faba809-a977-4ab3-8ae3-097a1a117528/",
+  "plan_run_id": "plan_20260117_031753_ui_bc3855",
+  "plan_artifacts_dir": "artifacts/runs/plan_20260117_031753_ui_bc3855/",
+  "status": "fail",
+  "started_at": "2026-01-17T03:18:29.430922",
+  "ended_at": "2026-01-17T03:18:30.304281",
+  "exit_code": 1,
+  "strategy_id": "demo_momentum_v1",
+  "strategy_version": "1.0.0",
+  "strategy_path": "strategies/example.yaml",
+  "date_from": "2025-12-18",
+  "date_to": "2026-01-17",
+  "symbols_resolved": [
+    "NVDA"
+  ],
+  "stages_resolved": [
+    "ingest",
+    "features",
+    "labels",
+    "recommend",
+    "backtest"
+  ],
+  "fail_fast": true,
+  "dry_run": false,
+  "stage_results": [
+    {
+      "stage_name": "ingest",
+      "status": "success",
+      "duration_sec": 0.319801,
+      "stage_exec_id": "d6de75f9-cd4e-45be-939f-643f6521f437",
+      "error_text": null,
+      "result_path": "stages/ingest/result.json",
+      "meta": {
+        "n_symbols": 1,
+        "symbols": [
+          "NVDA"
+        ]
+      }
+    },
+    {
+      "stage_name": "features",
+      "status": "success",
+      "duration_sec": 0.281677,
+      "stage_exec_id": "c811084f-5f5a-4ee9-a22a-589164a8a6b4",
+      "error_text": null,
+      "result_path": "stages/features/result.json",
+      "meta": {
+        "n_symbols": 1,
+        "symbols": [
+          "NVDA"
+        ],
+        "feature_version": "v1"
+      }
+    },
+    {
+      "stage_name": "labels",
+      "status": "success",
+      "duration_sec": 0.080991,
+      "stage_exec_id": "f83dc35b-d221-483f-a984-0f80398a819a",
+      "error_text": null,
+      "result_path": "stages/labels/result.json",
+      "meta": {
+        "n_symbols": 1,
+        "symbols": [
+          "NVDA"
+        ],
+        "label_version": "v1",
+        "horizon": 60
+      }
+    },
+    {
+      "stage_name": "recommend",
+      "status": "success",
+      "duration_sec": 0.016275,
+      "stage_exec_id": "4c4b64c8-92e8-4ba5-a92f-bf28e0181c1e",
+      "error_text": null,
+      "result_path": "stages/recommend/result.json",
+      "meta": {
+        "n_dates": 0,
+        "n_rows": 0,
+        "date_min": null,
+        "date_max": null,
+        "top_k": null,
+        "recommender": {
+          "type": "factor_rank",
+          "algo": null,
+          "target": null,
+          "featureset": null,
+          "feature_version": "v1"
+        },
+        "artifacts": {}
+      }
+    },
+    {
+      "stage_name": "backtest",
+      "status": "fail",
+      "duration_sec": 0.145908,
+      "stage_exec_id": null,
+      "error_text": "No approved targets found for demo_momentum_v1 in range 2025-12-18 ~ 2026-01-17",
+      "result_path": "stages/backtest/result.json",
+      "meta": {}
+    }
+  ],
+  "generated_at": "2026-01-17T03:18:30.305560"
+}

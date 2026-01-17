@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "stage_name": "labels",
+  "status": "success",
+  "started_at": "2026-01-17T03:18:30.057478",
+  "ended_at": "2026-01-17T03:18:30.138469",
+  "elapsed_sec": 0.080991,
+  "stage_exec_id": "f83dc35b-d221-483f-a984-0f80398a819a",
+  "meta": {
+    "n_symbols": 1,
+    "symbols": [
+      "NVDA"
+    ],
+    "label_version": "v1",
+    "horizon": 60
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-17T03:18:30.138481"
+}

@@ -18,14 +18,14 @@ borderColor = "rgb(59, 80, 106)"
 dataframeHeaderBackgroundColor = "rgb(31, 37, 70)"  
 
 # Base text
-# font = "'Space Grotesk':https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
-font = "'IBM Plex Sans KR':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR&display=swap"
+font = "'Space Grotesk':https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
+# font = "'IBM Plex Sans KR':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR&display=swap"
 baseFontWeight = 400
 baseFontSize = 16
 
 
 # Heading text
-headingFont = "IBM Plex Sans KR"
-headingFontWeights = [700, 700, 700, 300, 300, 300]
-headingFontSizes = ["2rem", "1.7rem", "1.3rem"]
+headingFont = "Space Grotesk"
+headingFontWeights = [400, 400, 300, 300, 300, 300]
+headingFontSizes = ["1.8rem", "1.5rem", "1.2rem"]
 

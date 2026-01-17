@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "stage_name": "features",
+  "status": "success",
+  "started_at": "2026-01-17T03:18:00.310211",
+  "ended_at": "2026-01-17T03:18:00.481742",
+  "elapsed_sec": 0.171531,
+  "stage_exec_id": "894bc405-0876-4257-8610-143e59c5c576",
+  "meta": {
+    "n_symbols": 1,
+    "symbols": [
+      "NVDA"
+    ],
+    "feature_version": "v1"
+  },
+  "errors": [],
+  "warnings": [],
+  "generated_at": "2026-01-17T03:18:00.481758"
+}
